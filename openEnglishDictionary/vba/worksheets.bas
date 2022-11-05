@@ -1,5 +1,11 @@
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
-    If ActiveCell.Column = 2 Then
-        Call openEnglishDictionary
-    End If
+    
+    Select Case ActiveCell.Column
+        Case 2
+            Call openDic
+            
+        Case 8
+            Call getMP3filename
+    End Select
+    
 End Sub
