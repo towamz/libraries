@@ -1,14 +1,18 @@
-
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+    Dim ed As New clsEnglishDictionary
     
-    Select Case ActiveCell.Column
+    Select Case ActiveCell.column
         Case 2
-            Call getMP3BySelenium
-            Call openEnglishDictionary
-            
-        'Case 8
-            'Call getMP3filename
-            
+            If Cells(ActiveCell.Row, 2).Value <> "" Then
+                If Cells(ActiveCell.Row, 8).Value = "" Then
+                    ed.setDriverOfPageBySelenium
+                    ed.getMP3BySelenium
+                    ed.getWordDefinitionBySelenium
+                    
+                End If
+           End If
     End Select
+    
+    Set ed = Nothing
     
 End Sub
