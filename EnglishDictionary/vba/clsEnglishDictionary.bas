@@ -126,6 +126,7 @@ Public Sub getMP3BySelenium()
     
     mp3URL = elements.Item(1).Attribute("data-src-mp3")
     
+    gfp.setDelimiter = "/"
     gfp.setFullFilename = mp3URL
     filename = gfp.getFilename
  
@@ -314,6 +315,7 @@ Public Sub playMP3()
             Err.Raise 1000, , "ファイル名が不明です"
         'ある場合は、ファイル名を取得する
         Else
+            gfp.setDelimiter = "/"
             gfp.setFullFilename = Cells(ActiveCell.Row, columnMP3Url).Value
             filename = gfp.getFilename
         End If
