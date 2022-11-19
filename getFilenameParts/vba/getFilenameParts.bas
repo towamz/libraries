@@ -1,5 +1,19 @@
 'フルパス保存用プロパティ
 Private STR_FullFilename As String
+Private STR_Delimiter As String
+
+
+Private Sub Class_Initialize()
+    'デリミタの既定値は"\"(windowsパス)
+    STR_Delimiter = "\"
+End Sub
+
+'デリミタを設定する
+Public Property Let setDelimiter(argDelimiter As String)
+
+    STR_Delimiter = argDelimiter
+
+End Property
 
 
 'フルパスを設定する
@@ -27,7 +41,7 @@ Property Get getPath()
         Err.Raise 1000, , "フルパスが設定されていません"
     End If
 
-    getPath = Left(STR_FullFilename, InStrRev(STR_FullFilename, "\"))
+    getPath = Left(STR_FullFilename, InStrRev(STR_FullFilename, STR_Delimiter))
     
 End Property
 
@@ -38,7 +52,7 @@ Property Get getFilename()
         Err.Raise 1000, , "フルパスが設定されていません"
     End If
 
-    getFilename = Mid(STR_FullFilename, InStrRev(STR_FullFilename, "\") + 1)
+    getFilename = Mid(STR_FullFilename, InStrRev(STR_FullFilename, STR_Delimiter) + 1)
     
 End Property
 
