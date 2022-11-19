@@ -31,7 +31,14 @@ Set objGetFilenameParts = New clsGetFilenameParts
 objGetFilenameParts.setFullFilename = "C:\sjis.txt"
 
 
-msgbox objGetFilenameParts.getFilenameNoExt()
+msgbox objGetFilenameParts.getFilename()
+
+
+objGetFilenameParts.setDelimiter="/"
+objGetFilenameParts.setFullFilename = "https://ja.wikipedia.org/wiki/kugiimoji.html"
+
+
+msgbox objGetFilenameParts.getFilename()
 
 
 
