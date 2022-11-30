@@ -72,12 +72,12 @@ Public Sub setDriverOfPageBySelenium()
     
     
     Do
-        'Set Driver = Nothing
-        'Set Driver = New Selenium.WebDriver
+        Set Driver = Nothing
+        Set Driver = New Selenium.WebDriver
         '最初のループではcloseでエラーになるので処理を続行するようにする
-        On Error Resume Next
-        Driver.Close
-        On Error GoTo 0
+        'On Error Resume Next
+        'Driver.Close
+        'On Error GoTo 0
         
         posCnt = posCnt + 1
         
@@ -88,7 +88,7 @@ Public Sub setDriverOfPageBySelenium()
         Driver.Start "Chrome"
         Driver.Get targetUrl
         
-    
+        On Error GoTo errLabel
         Set posElement = Driver.FindElementByClass("webtop").FindElementByClass("pos")
         
         '品詞未入力の場合は都度メッセージボックスで確認する
@@ -108,6 +108,28 @@ Public Sub setDriverOfPageBySelenium()
         End If
     
     Loop Until isDefLoopExit
+    
+    Exit Sub
+
+
+errLabel:
+
+    Select Case Err.Number
+        Case 7
+            If posCnt = 1 Then
+                MsgBox "該当の単語は見つかりませんでした"
+            Else
+                MsgBox "該当の単語で指定の品詞は見つかりませんでした"
+            End If
+            
+            Set Driver = Nothing
+        
+        Case Else
+            Debug.Print Err.Number
+            Debug.Print Err.Description
+
+            Stop
+    End Select
 
 End Sub
 
@@ -256,10 +278,10 @@ Private Function getPosTranslation(argPos As String) As String
         Case "名詞"
             getPosTranslation = "noun"
 
-        'Case ""
-        '    getPosTranslation = ""
-        'Case ""
-        '    getPosTranslation = ""
+        Case "adverb"
+            getPosTranslation = "副詞"
+        Case "副詞"
+            getPosTranslation = "adverb"
         
         'Case ""
         '    getPosTranslation = ""
