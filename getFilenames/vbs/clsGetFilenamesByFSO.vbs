@@ -18,6 +18,29 @@ Class clsGetFilenamesByFSO
 
 	End Property
 
+	'設定されている検索ディレクトリを返す
+	Public Property Get getDirectory()
+
+	    getDirectory = STR_Directory
+
+	End Property
+
+	'設定されている検索ディレクトリの文字列長を返す
+	Public Property Get getDirectoryLen()
+
+	    getDirectoryLen = Len(STR_Directory)
+
+	End Property
+
+
+	'設定されている検索ディレクトリを返す
+	Public Property Get getPattern()
+
+	    getPattern = STR_Pattern
+
+	End Property
+
+
 
 
 	Public Function getFilenamesByFSO()
@@ -33,7 +56,7 @@ Class clsGetFilenamesByFSO
 	    End If
 	    
 	    
-	    msgbox STR_Directory & STR_Pattern
+	    'msgbox STR_Directory & STR_Pattern
 
 
 
@@ -67,7 +90,6 @@ Class clsGetFilenamesByFSO
 
 
 End Class
-
 
 
 
