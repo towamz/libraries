@@ -1,4 +1,4 @@
-exeOption Explicit
+Option Explicit
 
 Class clsGetFilenamesByFSO
 	Private STR_Directory 
