@@ -1,4 +1,4 @@
-Option Explicit
+exeOption Explicit
 
 Class clsGetFilenamesByFSO
 	Private STR_Directory 
@@ -47,7 +47,6 @@ Class clsGetFilenamesByFSO
 		Dim objWshShell, objRE, objFS, objFolder, objFiles
 		Dim file
 	    Dim aryFileName() 
-	    Dim FileName 
 	    Dim cnt
 	    
 	    If STR_Directory="" Or STR_Pattern=""   then
@@ -85,6 +84,46 @@ Class clsGetFilenamesByFSO
 		Next
 
 	    getFilenamesByFSO = aryFileName
+
+	End Function
+	
+	
+	
+	Public Function getFirstMatchFilenameByFSO()
+		Dim objWshShell, objRE, objFS, objFolder, objFiles
+		Dim file
+	    
+	    If STR_Directory="" Or STR_Pattern=""   then
+	    	Err.Raise 1000
+	    	Exit Function
+	    End If
+	    
+	    
+	    'msgbox STR_Directory & STR_Pattern
+
+
+
+
+		Set objWshShell = WScript.CreateObject("WScript.Shell")
+		Set objFS = CreateObject("Scripting.FileSystemObject")
+		Set objFolder = objFS.GetFolder(STR_Directory)
+		Set objFiles = objFolder.Files
+		
+		Set objRE = CreateObject("VBScript.RegExp")
+		objRE.Pattern = STR_Pattern
+		
+
+		For Each file in objFiles
+			If objRE.Test(file.name) then
+				'マッチした最初のファイルを返す
+		        getFirstMatchFilenameByFSO = file
+		        Exit Function
+			
+			End If 
+		Next
+
+		'マッチするファイルが見つからなかったので、空白を返す
+	    getFirstMatchFilenameByFSO = ""
 
 	End Function
 
