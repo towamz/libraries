@@ -3,6 +3,7 @@ Option Explicit
 Sub setTable()
     Dim i, j As Long
     
+    
     'ページ設定
     With ActiveDocument.PageSetup
         '余白をゼロに設定
@@ -41,7 +42,7 @@ Sub setTable()
     For j = 1 To ActiveDocument.Tables(1).Columns.Count Step 2
     
         '左側は50mm
-        ActiveDocument.Tables(1).Columns(j).Width = 50 * DBL_POINT_TO_MM
+        ActiveDocument.Tables(1).Columns(j).Width = LNG_COLUMN_ONE * DBL_MM_TO_POINT
         
         '一番左は罫線を引かない
         If j > 1 Then
@@ -50,8 +51,7 @@ Sub setTable()
         End If
         
         '右側は20mm
-        ActiveDocument.Tables(1).Columns(j + 1).Width = 20 * DBL_POINT_TO_MM
-
+        ActiveDocument.Tables(1).Columns(j + 1).Width = LNG_COLUMN_TWO * DBL_MM_TO_POINT
 
     Next
 
@@ -59,12 +59,12 @@ Sub setTable()
     '行設定
     For i = 1 To ActiveDocument.Tables(1).Rows.Count Step 2
         '上側は30mm
-        ActiveDocument.Tables(1).Rows(i).Height = 30 * DBL_POINT_TO_MM
+        ActiveDocument.Tables(1).Rows(i).Height = LNG_ROW_ONE * DBL_MM_TO_POINT
         '下側は17mm、罫線を引く(切り取り線)
-        ActiveDocument.Tables(1).Rows(i + 1).Height = 18 * DBL_POINT_TO_MM
+        ActiveDocument.Tables(1).Rows(i + 1).Height = LNG_ROW_TWO * DBL_MM_TO_POINT
         ActiveDocument.Tables(1).Rows(i + 1).Borders(wdBorderBottom).LineStyle = wdLineStyleDashDot
-
     
     Next
 
 End Sub
+
