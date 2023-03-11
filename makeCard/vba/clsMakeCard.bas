@@ -1,9 +1,18 @@
 Option Explicit
 
+'グローバル変数
+Private LNG_Columns_Number_In_A_Page As Long
+Private ARYDBL_Columns_Length() As Double
+Private LNG_Rows_Number_In_A_Page As Long
+Private ARYDBL_Rows_Length() As Double
+
+'定数(変更なし)
 Const DBL_MM_TO_POINT As Double = 100 / 35.3
 Const DBL_POINT_TO_MM As Double = 35.3 / 100
 Const LNG_PICTURE_MARGIN As Long = 6
 
+
+'定数(設定)
 '縦
 ' Const LNG_PAGE_WIDTH As Long = 210
 ' Const LNG_PAGE_HEIGHT As Long = 297
@@ -12,14 +21,11 @@ Const LNG_PAGE_WIDTH As Long = 297
 Const LNG_PAGE_HEIGHT As Long = 210
 
 '列設定
-Const LNG_COLUMNS_NUMBER_IN_A_PAGE As Long = 3
 Const ARYSTR_COLUMNS_LENGTH As String = "45,46"
-Private ARYDBL_Columns_Length() As Double
 
 '行設定
-Const LNG_ROWS_NUMBER_IN_A_PAGE As Long = 4
 Const ARYSTR_ROWS_LENGTH As String = "12,10,10,10,10"
-Private ARYDBL_Rows_Length() As Double
+
 
 Private Sub Class_Initialize()
     Dim cellWidth As Double
@@ -29,13 +35,16 @@ Private Sub Class_Initialize()
     ARYDBL_Rows_Length = getAryFromAryStr(ARYSTR_ROWS_LENGTH, cellHeight)
     ARYDBL_Columns_Length = getAryFromAryStr(ARYSTR_COLUMNS_LENGTH, cellWidth)
     
-    'セルの長さ*セルの個数がページの長さを超えていないかチェック
-    If cellHeight * LNG_ROWS_NUMBER_IN_A_PAGE > LNG_PAGE_HEIGHT Then
-        Debug.Print cellHeight & "*" & LNG_ROWS_NUMBER_IN_A_PAGE & "=" & cellHeight * LNG_ROWS_NUMBER_IN_A_PAGE & "<-->" & LNG_PAGE_HEIGHT
-        Err.Raise 1000, , "ページ範囲内になるようにセル幅、セル数を指定してください"
-    ElseIf cellWidth * LNG_COLUMNS_NUMBER_IN_A_PAGE > LNG_PAGE_WIDTH Then
-        Debug.Print cellWidth & "*" & LNG_COLUMNS_NUMBER_IN_A_PAGE & "=" & cellWidth * LNG_COLUMNS_NUMBER_IN_A_PAGE & "<-->" & LNG_PAGE_WIDTH
-        Err.Raise 1000, , "ページ範囲内になるようにセル幅、セル数を指定してください"
+    LNG_Columns_Number_In_A_Page = LNG_PAGE_WIDTH / cellWidth
+    LNG_Rows_Number_In_A_Page = LNG_PAGE_HEIGHT / cellHeight
+    
+    If LNG_Columns_Number_In_A_Page = 0 Then
+        
+        Err.Raise 1000, , "1セルの幅・高さがページ範囲内になるように設定してください"
+    
+    ElseIf LNG_Rows_Number_In_A_Page = 0 Then
+        Err.Raise 1000, , "1セルの幅・高さがページ範囲内になるように設定してください"
+    
     End If
     
     
@@ -68,7 +77,11 @@ Private Function getAryFromAryStr(ByVal argAryStr As String, ByRef argLength As 
 
 End Function
 
+Public Sub showColumnsRowsNumber()
 
+    MsgBox "columns:" & LNG_Columns_Number_In_A_Page & vbCrLf & _
+         "Rows:" & LNG_Rows_Number_In_A_Page
+End Sub
 
 
 Public Sub setPage()
@@ -89,8 +102,8 @@ Public Sub setPage()
     'テーブルを追加
     ActiveDocument.Tables.Add _
         Range:=ActiveDocument.Range(0, 0), _
-        NumRows:=(UBound(ARYDBL_Rows_Length) + 1) * LNG_ROWS_NUMBER_IN_A_PAGE, _
-        NumColumns:=(UBound(ARYDBL_Columns_Length) + 1) * LNG_COLUMNS_NUMBER_IN_A_PAGE, _
+        NumRows:=(UBound(ARYDBL_Rows_Length) + 1) * LNG_Rows_Number_In_A_Page, _
+        NumColumns:=(UBound(ARYDBL_Columns_Length) + 1) * LNG_Columns_Number_In_A_Page, _
         DefaultTableBehavior:=wdWord8TableBehavior, _
         AutoFitBehavior:=wdAutoFitFixed
     
@@ -109,28 +122,22 @@ End Sub
 
 
 Public Sub setColumns()
-    Dim i, j As Long
-
+    Dim j As Long
+    Dim l As Long
     '列設定
-    For i = 1 To ActiveDocument.Tables(1).Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
-        For j = 0 To UBound(ARYDBL_Columns_Length) Step 1
+    For j = 1 To ActiveDocument.Tables(1).Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
+        For l = 0 To UBound(ARYDBL_Columns_Length) Step 1
             '配列に設定した列幅を設定する
-            ActiveDocument.Tables(1).Columns(i + j).Width = ARYDBL_Columns_Length(j) * DBL_MM_TO_POINT
-    
-            '罫線を引く(切り取り線)
-            '左罫線
-'            If j = 0 Then
-'                ActiveDocument.Tables(1).Columns(i + j).Borders(wdBorderLeft).LineStyle = wdLineStyleDashDot
-'            End If
-        
-            '右罫線
-            If j = UBound(ARYDBL_Columns_Length) Then
-                ActiveDocument.Tables(1).Columns(i + j).Borders(wdBorderRight).LineStyle = wdLineStyleDashDot
-            
-            End If
-
+            ActiveDocument.Tables(1).Columns(j + l).Width = ARYDBL_Columns_Length(l) * DBL_MM_TO_POINT
 
         Next
+            
+        '罫線を引く(切り取り線)
+        '左罫線
+        'ActiveDocument.Tables(1).Columns(i).Borders(wdBorderLeft).LineStyle = wdLineStyleDashDot
+    
+        '右罫線
+        ActiveDocument.Tables(1).Columns(j + UBound(ARYDBL_Columns_Length)).Borders(wdBorderRight).LineStyle = wdLineStyleDashDot
 
     Next
 
@@ -138,46 +145,45 @@ End Sub
 
 
 Public Sub setRows()
-    Dim i, j As Long
-
+    Dim i As Long
+    Dim k As Long
                         
     '行設定
     For i = 1 To ActiveDocument.Tables(1).Rows.Count Step (UBound(ARYDBL_Rows_Length) + 1)
-        For j = 0 To UBound(ARYDBL_Rows_Length) Step 1
+        For k = 0 To UBound(ARYDBL_Rows_Length) Step 1
             '配列に設定した行高を設定する
-            ActiveDocument.Tables(1).Rows(i + j).Height = ARYDBL_Rows_Length(j) * DBL_MM_TO_POINT
-            
-            '罫線を引く(切り取り線)
-            '上罫線
-'            If j = 0 Then
-'                ActiveDocument.Tables(1).Rows(i + j).Borders(wdBorderTop).LineStyle = wdLineStyleDashDot
-'
-'            End If
-                    
-            '下罫線
-            If j = UBound(ARYDBL_Rows_Length) Then
-                ActiveDocument.Tables(1).Rows(i + j).Borders(wdBorderBottom).LineStyle = wdLineStyleDashDot
-            
-            End If
+            ActiveDocument.Tables(1).Rows(i + k).Height = ARYDBL_Rows_Length(k) * DBL_MM_TO_POINT
         Next
+            
+        '罫線を引く(切り取り線)
+        '上罫線
+        'ActiveDocument.Tables(1).Rows(i).Borders(wdBorderTop).LineStyle = wdLineStyleDashDot
+                    
+        '下罫線
+        ActiveDocument.Tables(1).Rows(i + UBound(ARYDBL_Rows_Length)).Borders(wdBorderBottom).LineStyle = wdLineStyleDashDot
+    
     Next
-
-
-
 
 End Sub
 
 
 
 Public Sub setCells()
+    Dim i, j As Long
+    Dim k, l As Long
 
+    For i = 1 To ActiveDocument.Tables(1).Rows.Count Step (UBound(ARYDBL_Rows_Length) + 1)
+        For j = 1 To ActiveDocument.Tables(1).Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
+            For k = 0 To UBound(ARYDBL_Rows_Length) Step 1
+                For l = 0 To UBound(ARYDBL_Columns_Length) Step 1
+                    'デバッグ用
+                    'Debug.Print i & "+" & k & "," & j & "+" & l & "(", i + k & "," & j + l
+                    'ActiveDocument.Tables(1).Cell(i + k, j + l).Select
+                    'ActiveDocument.Tables(1).Cell(i + k, j + l).Range.Text = "(" & k & "," & l & ")"
+
+                Next
+            Next
+        Next
+    Next
 
 End Sub
-
-
-
-
-
-
-
-
