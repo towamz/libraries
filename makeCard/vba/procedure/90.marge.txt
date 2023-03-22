@@ -1,0 +1,8 @@
+Sub Macro1()
+
+
+    ActiveDocument.Range( _
+            ActiveDocument.Tables(1).Cell(1, 1).Range.Start, _
+            ActiveDocument.Tables(1).Cell(1, 2).Range.End).Cells.Merge
+            
+End Sub

@@ -1,10 +1,14 @@
 Option Explicit
 
+
 'グローバル変数
 Private LNG_Columns_Number_In_A_Page As Long
 Private ARYDBL_Columns_Length() As Double
 Private LNG_Rows_Number_In_A_Page As Long
 Private ARYDBL_Rows_Length() As Double
+
+Private ARYDBL_Cells_Length() As Double
+
 
 '定数(変更なし)
 Const DBL_MM_TO_POINT As Double = 100 / 35.3
@@ -31,6 +35,9 @@ Private Sub Class_Initialize()
     Dim cellWidth As Double
     Dim cellHeight As Double
     
+    Dim l As Long
+    Dim k As Long
+    
     '1カードあたりの行列の数とその長さの文字列をdouble型配列へ格納する
     ARYDBL_Rows_Length = getAryFromAryStr(ARYSTR_ROWS_LENGTH, cellHeight)
     ARYDBL_Columns_Length = getAryFromAryStr(ARYSTR_COLUMNS_LENGTH, cellWidth)
@@ -48,6 +55,27 @@ Private Sub Class_Initialize()
     End If
     
     
+    
+    'セルの長さを保持する変数を初期化
+    ReDim ARYDBL_Cells_Length(UBound(ARYDBL_Columns_Length), UBound(ARYDBL_Rows_Length), 1)
+        
+    For l = 0 To UBound(ARYDBL_Columns_Length) Step 1
+        For k = 0 To UBound(ARYDBL_Rows_Length) Step 1
+            '列幅を格納
+            ARYDBL_Cells_Length(l, k, 0) = ARYDBL_Columns_Length(l)
+        Next
+
+    Next
+            
+    For k = 0 To UBound(ARYDBL_Rows_Length) Step 1
+        For l = 0 To UBound(ARYDBL_Columns_Length) Step 1
+            '行高を格納
+            ARYDBL_Cells_Length(l, k, 1) = ARYDBL_Rows_Length(k)
+        Next
+
+    Next
+
+       
 End Sub
 
 
@@ -82,6 +110,54 @@ Public Sub showColumnsRowsNumber()
     MsgBox "columns:" & LNG_Columns_Number_In_A_Page & vbCrLf & _
          "Rows:" & LNG_Rows_Number_In_A_Page
 End Sub
+
+
+Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
+    Dim objIls As InlineShape
+    Dim objS As Shape
+    Dim cntMargin As Long
+            
+    Set objIls = ActiveDocument.InlineShapes.AddPicture( _
+        FileName:=argFilename, _
+        Range:=ActiveDocument.Tables(1).Cell(argI + argK, argJ + argL).Range)
+
+    objIls.LockAspectRatio = msoTrue
+    
+    'inlineShapeのままだと回転できないので一旦Shapeに変更する。Shapeのままだとcell範囲外になるのでinlineShapeに戻す
+    Set objS = objIls.ConvertToShape
+    objS.rotation = 0
+    objS.ConvertToInlineShape
+    
+    
+    Debug.Print argI + argK & "," & argJ + argL
+    Debug.Print Int(objIls.Height * DBL_POINT_TO_MM) & "," & Int(objIls.Width * DBL_POINT_TO_MM)
+    
+     
+    'Stop
+    
+    '大きさの調整
+    cntMargin = -1
+    
+    Do
+        cntMargin = cntMargin + 1
+    
+        If Int(objIls.Height * DBL_POINT_TO_MM) > (ARYDBL_Rows_Length(argK) - LNG_PICTURE_MARGIN) Then
+            objIls.Height = (ARYDBL_Rows_Length(argK) - LNG_PICTURE_MARGIN - cntMargin) * DBL_MM_TO_POINT
+        End If
+        
+        If Int(objIls.Width * DBL_POINT_TO_MM) > (ARYDBL_Columns_Length(argL) - LNG_PICTURE_MARGIN) Then
+            objIls.Width = (ARYDBL_Columns_Length(argL) - LNG_PICTURE_MARGIN - cntMargin) * DBL_MM_TO_POINT
+        End If
+        
+        
+        Debug.Print Int(objIls.Height * DBL_POINT_TO_MM) & "," & Int(objIls.Width * DBL_POINT_TO_MM)
+        'Stop
+
+    Loop While Int(objIls.Height * DBL_POINT_TO_MM) > (ARYDBL_Rows_Length(argK) - LNG_PICTURE_MARGIN) Or _
+               Int(objIls.Width * DBL_POINT_TO_MM) > (ARYDBL_Columns_Length(argL) - LNG_PICTURE_MARGIN)
+            
+End Sub
+
 
 
 Public Sub setPage()
@@ -164,6 +240,9 @@ Public Sub setRows()
     
     Next
 
+
+
+
 End Sub
 
 
@@ -186,4 +265,29 @@ Public Sub setCells()
         Next
     Next
 
+
 End Sub
+
+Public Sub setCellsReverse()
+    Dim i, j As Long
+    Dim k, l As Long
+
+
+    For i = ActiveDocument.Tables(1).Rows.Count - UBound(ARYDBL_Rows_Length) To 1 Step -(UBound(ARYDBL_Rows_Length) + 1)
+        For j = ActiveDocument.Tables(1).Columns.Count - UBound(ARYDBL_Columns_Length) To 1 Step -(UBound(ARYDBL_Columns_Length) + 1)
+            For k = 0 To UBound(ARYDBL_Rows_Length) Step 1
+                For l = 0 To UBound(ARYDBL_Columns_Length) Step 1
+                    'デバッグ用
+                    'Debug.Print i & "+" & k & "," & j & "+" & l & "(", i + k & "," & j + l
+                    'ActiveDocument.Tables(1).Cell(i + k, j + l).Select
+                    'ActiveDocument.Tables(1).Cell(i + k, j + l).Range.Text = "(" & k & "," & l & ")"
+
+                Next
+            Next
+
+        Next
+    Next
+
+
+End Sub
+
