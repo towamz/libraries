@@ -1,0 +1,90 @@
+Option Explicit
+
+Sub setPivotTable()
+    Dim pt As PivotTable
+    
+    Dim wb As Workbook
+    Dim wsDest As Worksheet
+    
+    Dim strWb As String
+    Dim strWsDest As String
+    
+    Dim tblNm As String
+    
+    
+    
+    
+    '■■■■■パラメータ設定■■■■■
+    'ワークブック名(空白の場合は実行ファイル)
+    strWb = ""
+    
+    'ピボットテーブルを生成するシート名
+    strWsDest = "pivod1"
+    
+    'ピボットテーブルの名前
+    tblNm = "ピボットテーブルの名前"
+
+    '■■■■■パラメータ設定終わり■■■■■
+    
+    
+    'データのあるワークブック
+    If strWb = "" Then
+        Set wb = ThisWorkbook
+    
+    Else
+        Set wb = Workbooks(strWb)
+    
+    End If
+    
+    Set wsDest = wb.Sheets(strWsDest)
+    
+    
+    Set pt = wsDest.PivotTables(tblNm)
+
+    
+    'ラベル設定(折りたたみを展開したときに項目が空白か埋められているか)
+    'pt.RepeatAllLabels xlRepeatLabels
+    pt.RepeatAllLabels xlDoNotRepeatLabels
+    
+    
+    
+    'フィルタ
+    With pt.PivotFields("項目")
+        .Orientation = xlPageField
+        .Position = 1
+    End With
+
+
+    '列
+    With pt.PivotFields("都道府県")
+        .Orientation = xlColumnField
+        .Position = 1
+    End With
+    
+    
+    
+    With pt.PivotFields("地区")
+        .Orientation = xlColumnField
+        .Position = 2
+    End With
+    
+    
+    '行
+    With pt.PivotFields("年月日")
+        .Orientation = xlRowField
+        .Position = 1
+    End With
+    pt.PivotFields("年月日").AutoGroup
+
+    
+    
+    
+    '集計
+    pt.AddDataField _
+        pt.PivotFields("気温"), "最大 / 気温", xlMax
+
+    pt.AddDataField _
+        pt.PivotFields("気温"), "平均 / 気温", xlAverage
+
+
+End Sub
