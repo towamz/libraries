@@ -1,0 +1,86 @@
+Option Explicit
+
+Sub createPivodTable()
+    Dim wb As Workbook
+    Dim wsOrig As Worksheet
+    Dim wsDest As Worksheet
+    Dim rgOrig As Range
+    Dim rgDest As Range
+    
+    Dim strWb As String
+    Dim strWsOrig As String
+    Dim strWsDest As String
+    Dim strRgOrigFst As String
+    Dim strRgDestFst As String
+    
+    Dim tblNm As String
+    
+    '■■■■■パラメータ設定■■■■■
+    'ワークブック名(空白の場合は実行ファイル)
+    strWb = ""
+    
+    'データのあるシート名
+    strWsOrig = "data (1)"
+    'データある最初のセル番地
+    strRgOrigFst = "A1"
+    
+    'ピボットテーブルを生成するシート名
+    strWsDest = "pivod1"
+    'ピボットテーブルを生成するセル番地
+    strRgDestFst = "A3"
+    
+    'ピボットテーブルの名前
+    tblNm = "ピボットテーブルの名前"
+    
+    '■■■■■パラメータ設定終わり■■■■■
+    
+    
+    
+    'データのあるワークブック
+    If strWb = "" Then
+        Set wb = ThisWorkbook
+    
+    Else
+        Set wb = Workbooks(strWb)
+    
+    End If
+    
+    
+    
+    'データのあるシート
+    Set wsOrig = wb.Sheets(strWsOrig)
+    
+    'データのあるセル
+    Set rgOrig = wsOrig.Range(strRgOrigFst & ":" & wsOrig.Range(strRgOrigFst).End(xlDown).End(xlToRight).Address)
+    
+    
+    
+    
+    'ピボットテーブルを生成するシート
+    On Error Resume Next
+    Set wsDest = wb.Sheets(strWsDest)
+    
+    If Err.Number = 9 Then
+        Set wsDest = Sheets.Add
+        wsDest.Name = strWsDest
+    Else
+        MsgBox "想定外のエラーが発生しました", vbOKOnly + vbCritical
+        Stop
+        Exit Sub
+    End If
+    On Error GoTo 0
+    
+    'ピボットテーブルを生成するセル
+    Set rgDest = wsDest.Range(strRgDestFst)
+    
+    
+    'ピボットテーブルを作成する
+    wb.PivotCaches.Create( _
+        SourceType:=xlDatabase, _
+        SourceData:=rgOrig, Version:=8 _
+        ).CreatePivotTable _
+            TableDestination:=rgDest, _
+            TableName:=tblNm, DefaultVersion:=8
+
+
+End Sub
