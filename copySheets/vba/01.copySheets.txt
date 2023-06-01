@@ -1,0 +1,83 @@
+Option Explicit
+
+Const STR_DIR = "C:\"
+Const STR_TARGET_BOOK As String = "newly_confirmed_cases_daily.csv"
+Const STR_TARGET_SHEET As String = "newly_confirmed_cases_daily"
+
+
+
+Sub copySheets()
+    Dim filenames As Variant
+    Dim filename As Variant
+    
+    Dim wb As Workbook
+    Dim wbData As Workbook
+    
+    Dim ws As Worksheet
+    Dim wsData As Worksheet
+    
+    'カレントディレクトリ変更
+    With CreateObject("WScript.Shell")
+        .CurrentDirectory = STR_DIR
+    End With
+
+    'ファイル名取得
+    filenames = Application.GetOpenFilename(FileFilter:="ファイル,*.*", Title:="ファイルを選んでください", MultiSelect:=True)
+
+
+
+
+    If Not IsArray(filenames) Then
+        MsgBox "ファイルが選ばれませんでした"
+        Exit Sub
+    End If
+
+
+
+    'ファイル名チェック
+    For Each filename In filenames
+    
+        If InStr(filename, STR_TARGET_BOOK) <> 0 Then
+            '処理を続行
+            'continue
+        
+        '指定したファイル二該当しない場合
+        Else
+            MsgBox "間違ったファイルが選択されました"
+    
+        End If
+    
+    Next
+
+    Set wb = ThisWorkbook
+
+    'ファイルコピー実行
+    For Each filename In filenames
+    
+        Set wbData = Workbooks.Open(filename:=filename, ReadOnly:=True)
+    
+        'ファイル内容チェック
+        If InStr(filename, STR_TARGET_BOOK) <> 0 Then
+            Set wsData = wbData.Worksheets(STR_TARGET_SHEET)
+            
+            If wsData.Range("A1").Value <> "Date" Then
+                MsgBox "ファイルの内容が間違っています"
+                Exit Sub
+            ElseIf wsData.Range("B1").Value <> "ALL" Then
+                MsgBox "ファイルの内容が間違っています"
+                Exit Sub
+            ElseIf wsData.Range("C1").Value <> "Hokkaido" Then
+                MsgBox "ファイルの内容が間違っています"
+                Exit Sub
+            End If
+        End If
+    
+        '末尾にシートをコピーする
+        wsData.Copy after:=wb.Sheets(wb.Sheets.Count)
+    
+        wbData.Close SaveChanges:=False
+    Next
+
+
+End Sub
+
