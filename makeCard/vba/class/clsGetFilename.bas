@@ -179,3 +179,12 @@ Public Function getLandscapeInfo() As Variant
     getLandscapeInfo = getInfo(WH_LANDSCAPE, DIC_LANDSCAPE_ROWS, STR_LANDSCAPE_PATH)
 
 End Function
+
+
+
+
+Public Function getQRCodeInfo() As String
+
+    getQRCodeInfo = "C:\card\pic\QR\businessCard-instaSide.PNG"
+
+End Function

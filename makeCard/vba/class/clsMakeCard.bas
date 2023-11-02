@@ -5,12 +5,12 @@ Private LNG_Columns_Number_In_A_Page As Long
 Private ARYDBL_Columns_Length() As Double
 Private LNG_Rows_Number_In_A_Page As Long
 Private ARYDBL_Rows_Length() As Double
+Private TBL_Tbl As Word.Table
 
 '定数(変更なし)
 Const DBL_MM_TO_POINT As Double = 100 / 35.3
 Const DBL_POINT_TO_MM As Double = 35.3 / 100
 Const LNG_PICTURE_MARGIN As Long = 3
-Const STR_QRCode_PATH As String = "C:\businessCard-instaSide.PNG"
 
 '定数(設定)
 '縦
@@ -28,6 +28,31 @@ Const ARYSTR_ROWS_LENGTH As String = "26,26"
 
 'グローバル変数(ファイル名取得)
 Private OBJ_Fn1 As clsGetFilename
+
+Public Sub makeCard(num As Integer)
+    Dim cnt As Integer
+    
+    showColumnsRowsNumber
+    setPage
+    
+    For cnt = 1 To num Step 1
+        addTable
+        setColumns
+        setRows
+        setCells
+        setCellsReverse
+    
+        Selection.EndKey Unit:=wdStory
+        Selection.InsertBreak Type:=wdPageBreak
+        
+        If cnt Mod 5 = 0 Then
+            If MsgBox("continue?", vbYesNo) = vbNo Then
+                Exit Sub
+            End If
+        End If
+    Next
+End Sub
+
 
 
 Private Sub Class_Terminate()
@@ -100,33 +125,40 @@ Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
             
     Set objIls = ActiveDocument.InlineShapes.AddPicture( _
         FileName:=argFilename, _
-        Range:=ActiveDocument.Tables(1).Cell(argI + argK, argJ + argL).Range)
+        Range:=TBL_Tbl.Cell(argI + argK, argJ + argL).Range)
 
     objIls.LockAspectRatio = msoTrue
     
+
     'inlineShapeのままだと回転できないので一旦Shapeに変更する。
+    '横幅が広い画像でも90に回転して挿入される画像があるので、rotationを0に設定する必要がある
+    '画像サイズ変更が次のブロックであるが、
+    'それと統合するとifとelse両方にConvertToShape/ConvertToInlineShapeを書く必要があるので
+    '回転と画像サイズ変更は別にした方がいい
     Set objS = objIls.ConvertToShape
-    
+
     '幅が大きいときは0
     If objS.Height < objS.Width Then
         objS.rotation = 0
-    
+
     '高さが大きいときは270(回転させる)
     Else
         objS.rotation = 270
-    
+
     End If
-    
+
     'Shapeのままだとcell範囲外になるのでinlineShapeに戻す
     Set objIls = objS.ConvertToInlineShape
 
+
+    
     
     '回転させていないとき、セルの行幅=画像の高さ・セルの列幅=画像の幅
     '回転させているとき、セルの行幅=画像の幅・セルの列幅=画像の高さ
     '画像がセル内におさまらないときは、セルと画像のアスペクト比を比較し大きい方の画像の高さ・幅をセル幅(+マージン)に合わせる
     
     
-    '回転させていないとき
+    '幅の方が大きいとき(回転させない)
     If objIls.Height < objIls.Width Then
         If objIls.Height * DBL_POINT_TO_MM > ARYDBL_Rows_Length(argK) Or objIls.Width * DBL_POINT_TO_MM > ARYDBL_Columns_Length(argL) Then
             'アスペクト比取得
@@ -139,6 +171,7 @@ Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
                 objIls.Height = (ARYDBL_Rows_Length(argK) * DBL_MM_TO_POINT) - LNG_PICTURE_MARGIN
             End If
         End If
+    '高さの方が大きいとき(回転させる)
     Else
         If objIls.Height * DBL_POINT_TO_MM > ARYDBL_Columns_Length(argL) Or objIls.Width * DBL_POINT_TO_MM > ARYDBL_Rows_Length(argK) Then
             'アスペクト比取得
@@ -155,13 +188,13 @@ Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
             
 End Sub
 
-Public Sub showColumnsRowsNumber()
+Private Sub showColumnsRowsNumber()
 
     MsgBox "columns:" & LNG_Columns_Number_In_A_Page & vbCrLf & _
          "Rows:" & LNG_Rows_Number_In_A_Page
 End Sub
 
-Public Sub setPage()
+Private Sub setPage()
     'ページ設定
     With ActiveDocument.PageSetup
         '余白をゼロに設定
@@ -175,17 +208,22 @@ Public Sub setPage()
         .PageHeight = MillimetersToPoints(LNG_PAGE_HEIGHT)
 
     End With
+   
+
+End Sub
+
+Private Sub addTable()
     
     'テーブルを追加
-    ActiveDocument.Tables.Add _
-        Range:=ActiveDocument.Range(0, 0), _
+    Set TBL_Tbl = ActiveDocument.Tables.Add( _
+        Range:=Selection.Range, _
         NumRows:=(UBound(ARYDBL_Rows_Length) + 1) * LNG_Rows_Number_In_A_Page, _
         NumColumns:=(UBound(ARYDBL_Columns_Length) + 1) * LNG_Columns_Number_In_A_Page, _
         DefaultTableBehavior:=wdWord8TableBehavior, _
-        AutoFitBehavior:=wdAutoFitFixed
+        AutoFitBehavior:=wdAutoFitFixed)
     
     '罫線なしに設定
-    With ActiveDocument.Tables(1)
+    With TBL_Tbl
         .Borders(wdBorderTop).LineStyle = wdLineStyleNone
         .Borders(wdBorderLeft).LineStyle = wdLineStyleNone
         .Borders(wdBorderBottom).LineStyle = wdLineStyleNone
@@ -198,58 +236,58 @@ Public Sub setPage()
 End Sub
 
 
-Public Sub setColumns()
+Private Sub setColumns()
     Dim j As Long
     Dim l As Long
     '列設定
-    For j = 1 To ActiveDocument.Tables(1).Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
+    For j = 1 To TBL_Tbl.Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
         For l = 0 To UBound(ARYDBL_Columns_Length) Step 1
             '配列に設定した列幅を設定する
-            ActiveDocument.Tables(1).Columns(j + l).Width = ARYDBL_Columns_Length(l) * DBL_MM_TO_POINT
+            TBL_Tbl.Columns(j + l).Width = ARYDBL_Columns_Length(l) * DBL_MM_TO_POINT
 
         Next
             
         '罫線を引く(切り取り線)
         '左罫線
-        'ActiveDocument.Tables(1).Columns(j).Borders(wdBorderLeft).LineStyle = wdLineStyleDashDot
+        'TBL_Tbl.Columns(j).Borders(wdBorderLeft).LineStyle = wdLineStyleDashDot
     
         '右罫線
-        'ActiveDocument.Tables(1).Columns(j + UBound(ARYDBL_Columns_Length)).Borders(wdBorderRight).LineStyle = wdLineStyleDashDot
+        'TBL_Tbl.Columns(j + UBound(ARYDBL_Columns_Length)).Borders(wdBorderRight).LineStyle = wdLineStyleDashDot
 
     Next
 
 End Sub
 
 
-Public Sub setRows()
+Private Sub setRows()
     Dim i As Long
     Dim k As Long
                         
     '行設定
-    For i = 1 To ActiveDocument.Tables(1).Rows.Count Step (UBound(ARYDBL_Rows_Length) + 1)
+    For i = 1 To TBL_Tbl.Rows.Count Step (UBound(ARYDBL_Rows_Length) + 1)
         For k = 0 To UBound(ARYDBL_Rows_Length) Step 1
             '配列に設定した行高を設定する
-            ActiveDocument.Tables(1).Rows(i + k).Height = ARYDBL_Rows_Length(k) * DBL_MM_TO_POINT
+            TBL_Tbl.Rows(i + k).Height = ARYDBL_Rows_Length(k) * DBL_MM_TO_POINT
         Next
             
         '罫線を引く(切り取り線)
         '上罫線
-        'ActiveDocument.Tables(1).Rows(i).Borders(wdBorderTop).LineStyle = wdLineStyleDashDot
+        'TBL_Tbl.Rows(i).Borders(wdBorderTop).LineStyle = wdLineStyleDashDot
                     
         '下罫線
-        'ActiveDocument.Tables(1).Rows(i + UBound(ARYDBL_Rows_Length)).Borders(wdBorderBottom).LineStyle = wdLineStyleDashDot
+        'TBL_Tbl.Rows(i + UBound(ARYDBL_Rows_Length)).Borders(wdBorderBottom).LineStyle = wdLineStyleDashDot
     
     Next
 
 End Sub
 
-Public Sub setCells()
+Private Sub setCells()
     Dim i, j As Long
     Dim k, l As Long
     Dim varF, varJ As Variant
 
-    For i = 1 To ActiveDocument.Tables(1).Rows.Count Step (UBound(ARYDBL_Rows_Length) + 1)
-        For j = 1 To ActiveDocument.Tables(1).Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
+    For i = 1 To TBL_Tbl.Rows.Count Step (UBound(ARYDBL_Rows_Length) + 1)
+        For j = 1 To TBL_Tbl.Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
 
             '画像ファイルパスと都市名を取得
             varF = OBJ_Fn1.getForeignCityInfo
@@ -260,22 +298,22 @@ Public Sub setCells()
             Call insertPicture(i, j, 1, 2, varJ(0))
             
             '書式設定・都市名挿入
-            ActiveDocument.Tables(1).Cell(i + 1, j).Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
-            ActiveDocument.Tables(1).Cell(i + 1, j + 2).Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
+            TBL_Tbl.Cell(i + 1, j).Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
+            TBL_Tbl.Cell(i + 1, j + 2).Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
             
             
-            ActiveDocument.Tables(1).Cell(i + 1, j + 1).Range.Orientation = wdTextOrientationUpward
-            ActiveDocument.Tables(1).Cell(i + 1, j + 1).Range.ParagraphFormat.Alignment = wdAlignParagraphLeft
-            ActiveDocument.Tables(1).Cell(i + 1, j + 1).Range.Text = varF(1)
+            TBL_Tbl.Cell(i + 1, j + 1).Range.Orientation = wdTextOrientationUpward
+            TBL_Tbl.Cell(i + 1, j + 1).Range.ParagraphFormat.Alignment = wdAlignParagraphLeft
+            TBL_Tbl.Cell(i + 1, j + 1).Range.Text = varF(1)
             
             If Len(varF(1)) > 10 Then
                 '文字列が切れていないか確認する
                 'Stop
             End If
 
-            ActiveDocument.Tables(1).Cell(i + 1, j + 3).Range.Orientation = wdTextOrientationUpward
-            ActiveDocument.Tables(1).Cell(i + 1, j + 3).Range.ParagraphFormat.Alignment = wdAlignParagraphLeft
-            ActiveDocument.Tables(1).Cell(i + 1, j + 3).Range.Text = varJ(1)
+            TBL_Tbl.Cell(i + 1, j + 3).Range.Orientation = wdTextOrientationUpward
+            TBL_Tbl.Cell(i + 1, j + 3).Range.ParagraphFormat.Alignment = wdAlignParagraphLeft
+            TBL_Tbl.Cell(i + 1, j + 3).Range.Text = varJ(1)
 
             If Len(varJ(1)) > 10 Then
                 '文字列が切れていないか確認する
@@ -288,28 +326,36 @@ Public Sub setCells()
 End Sub
 
 'セルを結合するとインデックス番号がずれるためインデックス番号が大きい方から結合を実施する
-Public Sub setCellsReverse()
+Private Sub setCellsReverse()
     Dim i, j As Long
     Dim k, l As Long
 
     '結合セルの幅を更新後、結合する
     ARYDBL_Columns_Length(0) = ARYDBL_Columns_Length(0) + ARYDBL_Columns_Length(1) + ARYDBL_Columns_Length(2) + ARYDBL_Columns_Length(3)
 
-    For i = ActiveDocument.Tables(1).Rows.Count - UBound(ARYDBL_Rows_Length) To 1 Step -(UBound(ARYDBL_Rows_Length) + 1)
-        For j = ActiveDocument.Tables(1).Columns.Count - UBound(ARYDBL_Columns_Length) To 1 Step -(UBound(ARYDBL_Columns_Length) + 1)
+    For i = TBL_Tbl.Rows.Count - UBound(ARYDBL_Rows_Length) To 1 Step -(UBound(ARYDBL_Rows_Length) + 1)
+        For j = TBL_Tbl.Columns.Count - UBound(ARYDBL_Columns_Length) To 1 Step -(UBound(ARYDBL_Columns_Length) + 1)
 
             ActiveDocument.Range( _
-                    ActiveDocument.Tables(1).Cell(i, j).Range.Start, _
-                    ActiveDocument.Tables(1).Cell(i, j + 3).Range.End).Cells.Merge
+                    TBL_Tbl.Cell(i, j).Range.Start, _
+                    TBL_Tbl.Cell(i, j + 3).Range.End).Cells.Merge
             
-            ActiveDocument.Tables(1).Cell(i, j).Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
+            TBL_Tbl.Cell(i, j).Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
 
-            Call insertPicture(i, j, 0, 0, STR_QRCode_PATH)
+            Call insertPicture(i, j, 0, 0, OBJ_Fn1.getQRCodeInfo)
 
-            ActiveDocument.Tables(1).Cell(i, j).Select
+            TBL_Tbl.Cell(i, j).Select
 
         Next
     Next
 
+    Dim tmp1 As Double
+    Dim tmp2 As Double
+    '次のループのため、セル幅の設定を元に戻す
+    ARYDBL_Rows_Length = getAryFromAryStr(ARYSTR_ROWS_LENGTH, tmp1)
+    ARYDBL_Columns_Length = getAryFromAryStr(ARYSTR_COLUMNS_LENGTH, tmp2)
+
 End Sub
+
+
 
