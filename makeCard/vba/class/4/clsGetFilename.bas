@@ -1,6 +1,6 @@
 Option Explicit
 
-Private GFFI As clsGetFolderFileInfo
+Private FSO As Scripting.FileSystemObject
 Private WT As clsWriteTextfile
 
 Private DIC_PICTURE_INFO As Object
@@ -16,7 +16,8 @@ Const STR_PICTURE_INFO_DELIMITER As String = "#"
 
 
 Private Sub Class_Initialize()
-    Set GFFI = New clsGetFolderFileInfo
+
+    Set FSO = New Scripting.FileSystemObject
     Set WT = New clsWriteTextfile
     
     STR_PICTURE_PATH = ThisDocument.Path & "\" & STR_PICTURE_PATH_NAME
@@ -30,7 +31,8 @@ End Sub
 
 
 Private Sub Class_Terminate()
-    Set GFFI = Nothing
+
+    Set FSO = Nothing
     Set WT = Nothing
 End Sub
 
@@ -50,8 +52,8 @@ End Property
 Private Sub checkFolderFilesFirst()
     Call checkFolderFiles
         
-    If GFFI.isFileExist(STR_USED_INFO_PATH) Then
-        If GFFI.getFileSize(STR_USED_INFO_PATH) <> 0 Then
+    If FSO.FileExists(STR_USED_INFO_PATH) Then
+        If FSO.GetFile(STR_USED_INFO_PATH).Size <> 0 Then
             If MsgBox("前回の使用済みファイル名が保存されています。初期化しますか", vbYesNo + vbDefaultButton2) = vbYes Then
                 Kill STR_USED_INFO_PATH
                 WT.createTextfile
@@ -64,12 +66,12 @@ Private Sub checkFolderFilesFirst()
 End Sub
 
 Private Sub checkFolderFiles()
-
-    If Not GFFI.isFolderExist(STR_PICTURE_PATH) Then
+    
+    If Not FSO.FolderExists(STR_PICTURE_PATH) Then
         MsgBox "保存フォルダがありません。作成します", vbOKOnly + vbInformation
-        GFFI.makeFolder (STR_PICTURE_PATH)
+        FSO.CreateFolder (STR_PICTURE_PATH)
         err.Raise 1000, , "フォルダを作成しました。画像を保存して再実行してください"
-    ElseIf GFFI.getPictureCount(STR_PICTURE_PATH) = 0 Then
+    ElseIf FSO.GetFolder(STR_PICTURE_PATH).Files.Count = 0 Then
         err.Raise 1001, , "画像が1枚もありません。画像を保存して再実行してください"
     End If
 
@@ -79,7 +81,8 @@ End Sub
 
 
 Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
-    Dim filesPath As Variant
+    'Dim filesPath As Variant
+    Dim objFile As Object
     Dim filePath As Variant
     Dim usedFilePath As Variant
     Dim backupDic As Object
@@ -92,14 +95,11 @@ Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
     'フォルダ・ファイル存在確認
     Call checkFolderFiles
     
-    'ファイルパスを取得する
-    filesPath = GFFI.getPictureArray(STR_PICTURE_PATH)
-
-    'ディクショナリにファイルパスを格納する
-    For Each filePath In filesPath
-        Debug.Print filePath
-        argDic.Add filePath, 0
-        backupDic.Add filePath, 0
+    'ファイルパスを取得 / get filepath
+    For Each objFile In FSO.GetFolder(argPath).Files
+        Debug.Print objFile.Path
+        argDic.Add objFile.Path, 0
+        backupDic.Add objFile.Path, 0
     Next
     
     '使用済みファイルに入力のあるファイル名をディクショナリから削除する / remove filename in the usedfile from dic
