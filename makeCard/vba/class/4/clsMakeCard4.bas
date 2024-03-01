@@ -35,55 +35,18 @@ Const ARYSTR_COLUMNS_LENGTH As String = "91"
 Const ARYSTR_ROWS_LENGTH As String = "52"
 
 'オブジェクト変数
-Private OBJ_Fn1 As clsGetFilename
-Private OBJ_ILH As clsInfiniteLoopHandler
-
-
-Public Sub makeCard(num As Integer)
-    Dim cnt As Integer
-    
-    showColumnsRowsNumber
-    clearContents
-    setPage
-    
-    For cnt = 1 To num Step 1
-        '無限ループハンドラー呼び出し
-        OBJ_ILH.infiniteLoopHandler
-        
-        
-        addTable
-        setColumns
-        setRows
-        setCells
-        'setCellsReverse
-
-        
-        Selection.EndKey Unit:=wdStory
-        Selection.InsertBreak Type:=wdPageBreak
-        
-    
-    Next
-End Sub
-
-Private Sub Class_Terminate()
-    'ファイル名参照オブジェクトを破棄
-    Set OBJ_Fn1 = Nothing
-    '無限ループハンドラーオブジェクトを破棄
-    Set OBJ_ILH = Nothing
-
-End Sub
+Private GF As clsGetFilename
+Private ILH As clsInfiniteLoopHandler
 
 
 Private Sub Class_Initialize()
     Dim cellWidth As Double
     Dim cellHeight As Double
         
-    
     'ファイル名参照オブジェクトのインスタンス化
-    Set OBJ_Fn1 = New clsGetFilename
+    Set GF = New clsGetFilename
     '無限ループハンドラーオブジェクトのインスタンス化
-    Set OBJ_ILH = New clsInfiniteLoopHandler
-    
+    Set ILH = New clsInfiniteLoopHandler
     
     '1カードあたりの行列の数とその長さの文字列をdouble型配列へ格納する
     ARYDBL_Rows_Length = getAryFromAryStr(ARYSTR_ROWS_LENGTH, cellHeight)
@@ -100,15 +63,41 @@ Private Sub Class_Initialize()
         err.Raise 1000, , "1セルの幅・高さがページ範囲内になるように設定してください"
     
     End If
-
-    
 End Sub
 
+Private Sub Class_Terminate()
+    'ファイル名参照オブジェクトを破棄
+    Set GF = Nothing
+    '無限ループハンドラーオブジェクトを破棄
+    Set ILH = Nothing
+End Sub
+
+
+Public Sub makeCard(num As Integer)
+    Dim cnt As Integer
+    
+    showColumnsRowsNumber
+    clearContents
+    setPage
+    
+    For cnt = 1 To num Step 1
+        '無限ループハンドラー呼び出し
+        ILH.infiniteLoopHandler
+
+        addTable
+        setColumns
+        setRows
+        setCells
+        'setCellsReverse
+        
+        Selection.EndKey Unit:=wdStory
+        Selection.InsertBreak Type:=wdPageBreak
+    Next
+End Sub
 
 '配列文字列から配列を生成するとstr型になるので、dbl型に変換する
 '1セルあたりの幅・高さの合計を参照渡しの変数で返す
 Private Function getAryFromAryStr(ByVal argAryStr As String, ByRef argLength As Double) As Double()
-
     Dim i As Long
     Dim aryTmp As Variant
     Dim aryTmp2() As Double
@@ -127,11 +116,7 @@ Private Function getAryFromAryStr(ByVal argAryStr As String, ByRef argLength As 
     Next
 
     getAryFromAryStr = aryTmp2
-
-
 End Function
-
-
 
 Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
     Dim objIls As InlineShape
@@ -146,7 +131,6 @@ Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
     If objIlsFirstCellPicture Is Nothing Then
         Set objIlsFirstCellPicture = objIls
     End If
-    
     
     objIls.LockAspectRatio = msoTrue
     
@@ -171,12 +155,10 @@ Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
     Set objIls = objS.ConvertToInlineShape
     
     objIls.Range.ParagraphFormat.Alignment = wdAlignParagraphCenter
-
     
     '回転させていないとき、セルの行幅=画像の高さ・セルの列幅=画像の幅
     '回転させているとき、セルの行幅=画像の幅・セルの列幅=画像の高さ
     '画像がセル内におさまらないときは、セルと画像のアスペクト比を比較し大きい方の画像の高さ・幅をセル幅(+マージン)に合わせる
-    
     
     '幅の方が大きいとき
     If objIls.Height < objIls.Width Then
@@ -207,16 +189,13 @@ Private Sub insertPicture(argI, argJ, argK, argL, argFilename)
         Set objS = objIls.ConvertToShape
         objS.Top = LNG_PICTURE_OFFSET
     End If
-            
 End Sub
 
 'https://www.msofficeforums.com/word-vba/11055-word-vba-add-textboxs-table-cells.html
-
 Private Sub insertTextbox(argI, argJ, argK, argL, argText)
     Dim lLeft As Long
     Dim Shp As Word.Shape
     Dim Rng As Word.Range
-    
 
     Set Rng = TBL_Tbl.Cell(argI + argK, argJ + argL).Range
     Rng.Collapse wdCollapseStart
@@ -244,7 +223,6 @@ Private Sub insertTextbox(argI, argJ, argK, argL, argText)
     DoEvents
     DoEvents
 
-
     With Shp
       .RelativeHorizontalPosition = wdRelativeHorizontalPositionPage
       .RelativeVerticalPosition = wdRelativeVerticalPositionPage
@@ -253,10 +231,7 @@ Private Sub insertTextbox(argI, argJ, argK, argL, argText)
       .TextFrame.TextRange.Font.ColorIndex = wdBrightGreen
       .TextFrame.TextRange.ParagraphFormat.Alignment = wdAlignParagraphRight
     End With
-
 End Sub
-
-
 
 Public Sub showColumnsRowsNumber()
 
@@ -282,12 +257,9 @@ Private Sub setPage()
         .PageHeight = MillimetersToPoints(LNG_PAGE_HEIGHT)
 
     End With
-   
-
 End Sub
 
 Private Sub addTable()
-    
     'テーブルを追加
     Set TBL_Tbl = ActiveDocument.Tables.Add( _
         Range:=Selection.Range, _
@@ -309,7 +281,6 @@ Private Sub addTable()
     End With
 End Sub
 
-
 Public Sub setColumns()
     Dim j As Long
     Dim l As Long
@@ -318,7 +289,6 @@ Public Sub setColumns()
         For l = 0 To UBound(ARYDBL_Columns_Length) Step 1
             '配列に設定した列幅を設定する
             TBL_Tbl.Columns(j + l).Width = ARYDBL_Columns_Length(l) * DBL_MM_TO_POINT
-
         Next
             
         '罫線を引く(切り取り線)
@@ -327,11 +297,8 @@ Public Sub setColumns()
     
         '右罫線
         'TBL_Tbl.Columns(j + UBound(ARYDBL_Columns_Length)).Borders(wdBorderRight).LineStyle = wdLineStyleDashDot
-
     Next
-
 End Sub
-
 
 Public Sub setRows()
     Dim i As Long
@@ -350,15 +317,8 @@ Public Sub setRows()
                     
         '下罫線
         'TBL_Tbl.Rows(i + UBound(ARYDBL_Rows_Length)).Borders(wdBorderBottom).LineStyle = wdLineStyleDashDot
-    
     Next
-
-
-
-
 End Sub
-
-
 
 Public Sub setCells()
     Dim i, j As Long
@@ -371,14 +331,10 @@ Public Sub setCells()
 
     For i = 1 To TBL_Tbl.Rows.Count Step (UBound(ARYDBL_Rows_Length) + 1)
         For j = 1 To TBL_Tbl.Columns.Count Step (UBound(ARYDBL_Columns_Length) + 1)
-
-            varInfo = OBJ_Fn1.getPictureInfo
-
+            varInfo = GF.getPictureInfo
             Call insertPicture(i, j, 0, 0, varInfo(0))
-            
         Next
     Next
-
 
     Set objS = objIlsFirstCellPicture.ConvertToShape
     
@@ -387,6 +343,4 @@ Public Sub setCells()
         objS.rotation = 270
         objS.Top = LNG_PICTURE_OFFSET
     End If
-
 End Sub
-

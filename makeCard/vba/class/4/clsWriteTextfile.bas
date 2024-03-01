@@ -13,13 +13,13 @@ Enum openmodeType
     notOpened
 End Enum
 
+
 Private Sub Class_Initialize()
     Set FSO = New Scripting.FileSystemObject
     ENM_OPENMODE_TYPE = notOpened
     LNG_FILE_NO = 0
     STR_Filename = STR_DEFAULT_FILENAME
-    'STR_TEXTFILE_PATH = ThisDocument.Path & "\" & STR_DEFAULT_FILENAME
-    
+    'STR_TEXTFILE_PATH = ThisDocument.Path & "\" & STR_DEFAULT_FILENAME    
 End Sub
 
 Private Sub Class_Terminate()
@@ -28,6 +28,7 @@ Private Sub Class_Terminate()
     End If
     Set FSO = Nothing
 End Sub
+
 
 Property Let setTextFilePath(argPath As String)
     If LNG_FILE_NO = 0 Then
@@ -178,9 +179,9 @@ Public Sub openTextfile(argOpenmodeType As openmodeType)
         
         Case Else
             err.Raise 11, , "オープンモードの指定が間違っています"
+
     End Select
 End Sub
-
 
 Public Sub closeTextfile()
     If LNG_FILE_NO = 0 Then
@@ -193,11 +194,16 @@ Public Sub closeTextfile()
     End If
 End Sub
 
-Public Sub renewTextfile()
+Public Sub renewTextfile(Optional argOpenmodeType As openmodeType = notOpened)
     Call closeTextfile
     Kill STR_TEXTFILE_PATH
     Call openTextfile(asWrite)
     Call closeTextfile
+
+    'openmodeがnotOpened以外の場合はそのモードで開く
+    If argOpenmodeType <> notOpened Then
+        Call openTextfile(argOpenmodeType)
+    End If
 End Sub
 
 'テキストファイルを作成する

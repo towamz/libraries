@@ -16,7 +16,6 @@ Const STR_PICTURE_INFO_DELIMITER As String = "#"
 
 
 Private Sub Class_Initialize()
-
     Set FSO = New Scripting.FileSystemObject
     Set WT = New clsWriteTextfile
     
@@ -29,16 +28,13 @@ Private Sub Class_Initialize()
 
 End Sub
 
-
 Private Sub Class_Terminate()
-
     Set FSO = Nothing
     Set WT = Nothing
 End Sub
 
 
 Property Let setPicturePath(argPath As String)
-
     '相対パスの場合 / when relative path
     If InStr(argPath, "\") = 0 Then
         STR_PICTURE_PATH = ThisDocument.Path & "\" & argPath
@@ -48,6 +44,7 @@ Property Let setPicturePath(argPath As String)
     End If
 
 End Property
+
 
 Private Sub checkFolderFilesFirst()
     Call checkFolderFiles
@@ -66,7 +63,6 @@ Private Sub checkFolderFilesFirst()
 End Sub
 
 Private Sub checkFolderFiles()
-    
     If Not FSO.FolderExists(STR_PICTURE_PATH) Then
         MsgBox "保存フォルダがありません。作成します", vbOKOnly + vbInformation
         FSO.CreateFolder (STR_PICTURE_PATH)
@@ -74,11 +70,7 @@ Private Sub checkFolderFiles()
     ElseIf FSO.GetFolder(STR_PICTURE_PATH).Files.Count = 0 Then
         err.Raise 1001, , "画像が1枚もありません。画像を保存して再実行してください"
     End If
-
 End Sub
-
-
-
 
 Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
     'Dim filesPath As Variant
@@ -97,7 +89,7 @@ Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
     
     'ファイルパスを取得 / get filepath
     For Each objFile In FSO.GetFolder(argPath).Files
-        Debug.Print objFile.Path
+        'Debug.Print objFile.Path
         argDic.Add objFile.Path, 0
         backupDic.Add objFile.Path, 0
     Next
@@ -107,8 +99,7 @@ Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
     Do Until WT.isEOF
         DoEvents
         usedFilePath = WT.readTextfile(1)
-        'usedFilePath = Replace(usedFilePath, vbCrLf, "")
-        Debug.Print usedFilePath
+        'Debug.Print usedFilePath
         
         If argDic.Exists(usedFilePath) Then
             argDic.Remove usedFilePath
@@ -117,18 +108,14 @@ Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
     
     'テキストファイルからのデータを削除した結果、count=0になった場合はバックアップをコピー
     If argDic.Count = 0 Then
+        Debug.Print "dic keys all deleted, recover now"
         Set argDic = backupDic
         'ファイルは削除する
-        WT.renewTextfile
+        WT.renewTextfile (notOpened)
     Else
         WT.closeTextfile
     End If
-
 End Sub
-
-
-
-
 
 Private Function getInfo(ByRef argDic As Object, ByRef argPath As String) As Variant
     Dim aryTmp(1) As Variant
@@ -137,11 +124,13 @@ Private Function getInfo(ByRef argDic As Object, ByRef argPath As String) As Var
 
     'ディクショナリがない・要素0の場合は再取得する
     If argDic Is Nothing Then
+        Debug.Print "dic make"
         Call makeDic(argDic, argPath)
     End If
     
     If argDic.Count = 0 Then
         'すべてのファイルを読み込んだので、テキストファイルを削除し空ファイルを作成する
+        Debug.Print "dic remake"
         WT.renewTextfile
         Call makeDic(argDic, argPath)
     End If
@@ -180,5 +169,3 @@ Public Function getPictureInfo() As Variant
     getPictureInfo = getInfo(DIC_PICTURE_INFO, STR_PICTURE_PATH)
 
 End Function
-
-
