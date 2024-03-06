@@ -1,0 +1,3 @@
+batを管理者権限で実行する
+
+execute bat by administrator privilege
