@@ -6,16 +6,16 @@ Option Explicit
 Function Include(strFile)
 	'strFile：読み込むvbsファイルパス
  
-	Dim objFso, objWsh, strPath
-	Set objFso = Wscript.CreateObject("Scripting.FileSystemObject")
+	Dim FSO, TF, strPath
+	Set FSO = Wscript.CreateObject("Scripting.FileSystemObject")
 	
 	'外部ファイルの読み込み
-	Set objWsh = objFso.OpenTextFile(strFile)
-	ExecuteGlobal objWsh.ReadAll()
-	objWsh.Close
+	Set TF = FSO.OpenTextFile(strFile)
+	ExecuteGlobal TF.ReadAll()
+	TF.Close
  
-	Set objWsh = Nothing
-	Set objFso = Nothing
+	Set TF = Nothing
+	Set FSO = Nothing
  
 End Function
 
