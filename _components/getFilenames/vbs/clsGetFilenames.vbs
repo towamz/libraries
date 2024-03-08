@@ -8,6 +8,12 @@ Private STR_Pattern
 
 '検索ディレクトリを設定する
 Public Property Let setDirectory(argDirectory)
+	With CreateObject("Scripting.FileSystemObject")
+		If Not .FolderExists(argDirectory) Then
+			Err.Raise 1000
+		End If
+	End With
+
 	STR_Directory = argDirectory
 End Property
 
@@ -43,11 +49,6 @@ End Sub
 
 
 Public Function getFilesObj()
-	If STR_Directory= "" then
-		Err.Raise 1000
-		Exit Function
-	End If
-
 	With CreateObject("Scripting.FileSystemObject")
 		Set getFilesObj = .GetFolder(STR_Directory).Files
 	End With
@@ -58,11 +59,6 @@ Public Function getFilenamesArray()
 	Dim aryFileName() 
 	Dim cnt
 	
-	If STR_Directory="" Or STR_Pattern=""   then
-		Err.Raise 1000
-		Exit Function
-	End If
-
 	Set objFiles = getFilesObj()
 
 	Set objRE = CreateObject("VBScript.RegExp")
@@ -89,11 +85,6 @@ Public Function getFilenamesDictionary()
 	Dim objRE, objFiles, objFile
 	Dim dicFileNames
 
-	If STR_Directory="" Or STR_Pattern=""   then
-		Err.Raise 1000
-		Exit Function
-	End If
-
 	Set objFiles = getFilesObj()
 
 	Set dicFileNames = CreateObject("Scripting.Dictionary")
@@ -114,11 +105,6 @@ End Function
 Public Function getFirstMatchFilename()
 	Dim objRE, objFiles, objFile
 	
-	If STR_Directory="" Or STR_Pattern=""   then
-		Err.Raise 1000
-		Exit Function
-	End If
-
 	Set objFiles = getFilesObj()
 
 	Set objRE = CreateObject("VBScript.RegExp")
