@@ -19,6 +19,11 @@ End Property
 
 'パターンを設定する
 Public Property Let setPattern(argPattern)
+	'不正な正規表現であればエラー発生 / an error occure if invalid
+	With CreateObject("VBScript.RegExp")
+		.Pattern = STR_Pattern
+		.Test("testExec")
+	End With
 	STR_Pattern = argPattern
 End Property
 
@@ -55,23 +60,26 @@ Public Function getFilesObj()
 End Function
 
 Public Function getFilenamesArray()
-	Dim objRE, objFiles, objFile
+	Dim objFiles, objFile
 	Dim aryFileName() 
 	Dim cnt
 	
 	Set objFiles = getFilesObj()
 
-	Set objRE = CreateObject("VBScript.RegExp")
-	objRE.Pattern = STR_Pattern
 
 	cnt = 0
 	ReDim Preserve aryFileName(objFiles.count)
-	For Each objFile in objFiles
-		If objRE.Test(objFile.name) then
-			aryFileName(cnt) = objFile.name
-			cnt = cnt + 1		
-		End If 
-	Next
+	
+	With CreateObject("VBScript.RegExp")
+		.Pattern = STR_Pattern
+
+		For Each objFile in objFiles
+			If .Test(objFile.name) then
+				aryFileName(cnt) = objFile.name
+				cnt = cnt + 1		
+			End If 
+		Next
+	End With
 
 	If cnt = 0 then
 		getFilenamesArray = ""
@@ -82,41 +90,41 @@ Public Function getFilenamesArray()
 End Function
 
 Public Function getFilenamesDictionary()
-	Dim objRE, objFiles, objFile
+	Dim objFiles, objFile
 	Dim dicFileNames
 
 	Set objFiles = getFilesObj()
 
 	Set dicFileNames = CreateObject("Scripting.Dictionary")
 
-	Set objRE = CreateObject("VBScript.RegExp")
-	objRE.Pattern = STR_Pattern
-
-	For Each objFile in objFiles
-		If objRE.Test(objFile.name) then
-			dicFileNames.Add objFile.name,0
-		End If 
-	Next
+	With CreateObject("VBScript.RegExp")
+		.Pattern = STR_Pattern
+		For Each objFile in objFiles
+			If .Test(objFile.name) then
+				dicFileNames.Add objFile.name,0
+			End If 
+		Next
+	End With
 
 	set getFilenamesDictionary = dicFileNames
 
 End Function
 
 Public Function getFirstMatchFilename()
-	Dim objRE, objFiles, objFile
+	Dim objFiles, objFile
 	
 	Set objFiles = getFilesObj()
 
-	Set objRE = CreateObject("VBScript.RegExp")
-	objRE.Pattern = STR_Pattern
-
-	For Each objFile in objFiles
-		If objRE.Test(objFile.name) then
-			'マッチした最初のファイルを返す
-			getFirstMatchFilename = objFile.name
-			Exit Function
-		End If 
-	Next
+	With CreateObject("VBScript.RegExp")
+		.Pattern = STR_Pattern
+		For Each objFile in objFiles
+			If .Test(objFile.name) then
+				'マッチした最初のファイルを返す
+				getFirstMatchFilename = objFile.name
+				Exit Function
+			End If 
+		Next
+	End With
 
 	'マッチするファイルが見つからなかったので、空白を返す
 	getFirstMatchFilename = ""
