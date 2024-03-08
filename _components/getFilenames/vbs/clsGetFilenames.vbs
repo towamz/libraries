@@ -21,7 +21,7 @@ End Property
 Public Property Let setPattern(argPattern)
 	'不正な正規表現であればエラー発生 / an error occure if invalid
 	With CreateObject("VBScript.RegExp")
-		.Pattern = STR_Pattern
+		.Pattern = argPattern
 		.Test("testExec")
 	End With
 	STR_Pattern = argPattern
@@ -68,6 +68,7 @@ Public Function getFilenamesArray()
 
 
 	cnt = 0
+	'配列要素数をファイル数に設定する / set array index to fils count (possible max number) 
 	ReDim Preserve aryFileName(objFiles.count)
 	
 	With CreateObject("VBScript.RegExp")
@@ -84,6 +85,8 @@ Public Function getFilenamesArray()
 	If cnt = 0 then
 		getFilenamesArray = ""
 	else
+		'配列要素数を再設定する(正規表現に一致しないファイルがある可能性がある) / 
+		'reset array index (there may be files unmatch the regular expression)
 		ReDim Preserve aryFileName(cnt - 1)
 		getFilenamesArray = aryFileName
 	End If
