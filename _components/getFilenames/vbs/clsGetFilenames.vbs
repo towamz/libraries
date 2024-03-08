@@ -31,6 +31,28 @@ Public Property Get getPattern()
 	getPattern = STR_Pattern
 End Property
 
+Private Sub Class_Initialize()
+	'既定値はカレントディレクトリ / defalut is the current directory
+	With CreateObject("Scripting.FileSystemObject")
+		STR_Directory = .getParentFolderName(WScript.ScriptFullName)
+	End With
+
+	'既定値はすべてのファイル / defalut is all files
+	STR_Pattern = ".*"
+End Sub
+
+
+Public Function getFilesObj()
+	If STR_Directory= "" then
+		Err.Raise 1000
+		Exit Function
+	End If
+
+	With CreateObject("Scripting.FileSystemObject")
+		Set getFilesObj = .GetFolder(STR_Directory).Files
+	End With
+End Function
+
 Public Function getFilenamesArray()
 	Dim objRE, objFiles, objFile
 	Dim aryFileName() 
@@ -41,36 +63,40 @@ Public Function getFilenamesArray()
 		Exit Function
 	End If
 
-	With CreateObject("Scripting.FileSystemObject")
-		Set objFiles = .GetFolder(STR_Directory).Files
-	End With
+	Set objFiles = getFilesObj()
 
 	Set objRE = CreateObject("VBScript.RegExp")
 	objRE.Pattern = STR_Pattern
 
 	cnt = 0
-
+	ReDim Preserve aryFileName(objFiles.count)
 	For Each objFile in objFiles
 		If objRE.Test(objFile.name) then
-			ReDim Preserve aryFileName(cnt)
 			aryFileName(cnt) = objFile.name
 			cnt = cnt + 1		
 		End If 
 	Next
 
-	getFilenamesArray = aryFileName
-
+	If cnt = 0 then
+		getFilenamesArray = ""
+	else
+		ReDim Preserve aryFileName(cnt - 1)
+		getFilenamesArray = aryFileName
+	End If
 End Function
 
 Public Function getFilenamesDictionary()
 	Dim objRE, objFiles, objFile
 	Dim dicFileNames
 
-	Set dicFileNames = CreateObject("Scripting.Dictionary")
+	If STR_Directory="" Or STR_Pattern=""   then
+		Err.Raise 1000
+		Exit Function
+	End If
 
-	With CreateObject("Scripting.FileSystemObject")
-		Set objFiles = .GetFolder(STR_Directory).Files
-	End With
+	Set objFiles = getFilesObj()
+
+	Set dicFileNames = CreateObject("Scripting.Dictionary")
 
 	Set objRE = CreateObject("VBScript.RegExp")
 	objRE.Pattern = STR_Pattern
@@ -93,9 +119,7 @@ Public Function getFirstMatchFilename()
 		Exit Function
 	End If
 
-	With CreateObject("Scripting.FileSystemObject")
-		Set objFiles = .GetFolder(STR_Directory).Files
-	End With
+	Set objFiles = getFilesObj()
 
 	Set objRE = CreateObject("VBScript.RegExp")
 	objRE.Pattern = STR_Pattern
