@@ -1,8 +1,6 @@
 Function getFolderPath(defaultpath)
 'https://y-moride.com/vba/dailog-folder-picker.html
-
 	Dim FOLDER
-	Dim path
 
 	With CreateObject("Shell.Application")        
 		'フォルダ選択ダイアログを表示
@@ -10,9 +8,11 @@ Function getFolderPath(defaultpath)
 		'&H200 = 「新しいフォルダの作成」を表示しない
 		Set FOLDER = .BrowseForFolder(0, "フォルダを選んでください" , &H200 , defaultpath)
 	End With
-	If FOLDER Is Nothing Then WScript.Quit
 
-	getFolderPath = FOLDER.Self.Path
+	If FOLDER Is Nothing Then 
+        err.raise 1000
+    End If
+    getFolderPath = FOLDER.Self.Path
 End Function
 
 
