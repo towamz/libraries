@@ -35,12 +35,12 @@ Include("clsCompareFilesInFolders.vbs")	'クラスファイルの読み込み
 Dim CFIF
 Set CFIF = New clsCompareFilesInFolders
 
-CFIF.setDirectory1 = "C:\Users\forwa\OneDrive\デスクトップ\compFiles\2\folder1"
-CFIF.setDirectory2 = "C:\Users\forwa\OneDrive\デスクトップ\compFiles\2\folder2"
+CFIF.setDirectory1 = "C:\compFiles\2\folder1"
+CFIF.setDirectory2 = "C:\compFiles\2\folder2"
 CFIF.setPattern = "\.png$"
-CFIF.setFilenameResult1 = "C:\Users\forwa\OneDrive\デスクトップ\compFiles\2\result1Only.txt"
-CFIF.setFilenameResult2 = "C:\Users\forwa\OneDrive\デスクトップ\compFiles\2\result2Only.txt"
-CFIF.setFilenameResultBoth = "C:\Users\forwa\OneDrive\デスクトップ\compFiles\2\resultBoth.txt"
+CFIF.setFilenameResult1 = "C:\compFiles\2\result1Only.txt"
+CFIF.setFilenameResult2 = "C:\compFiles\2\result2Only.txt"
+CFIF.setFilenameResultBoth = "C:\compFiles\2\resultBoth.txt"
 
 
 CFIF.compareFilesInFolders()
