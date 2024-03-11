@@ -44,3 +44,15 @@ With CreateObject("Scripting.FileSystemObject")
     FL.WriteLine(.GetTempName())
     FL.Close
 End with
+
+
+'-----テキストファイル-----
+'C:\test\script\testname.txt
+
+'C:
+'C:\test\script
+'testname.txt
+'testname
+'txt
+'C:\fso\absPath.txtx
+'rad8FEC6.tmp
