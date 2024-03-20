@@ -5,9 +5,8 @@ Option Explicit
 
 Class clsCompareFilesInFolders
 
-private directory1
-private directory2
-private pattern
+private GFs1
+private	GFs2
 private result1textfile
 private result2textfile
 private resultBothtextfile
@@ -16,32 +15,16 @@ private resultBothtextfile
 
 '検索ディレクトリを設定する
 Public Property Let setDirectory1(argDirectory)
-	With CreateObject("Scripting.FileSystemObject")
-		If Not .FolderExists(argDirectory) Then
-			Err.Raise 1000
-		End If
-	End With
-
-	directory1 = argDirectory
+	GFs1.setDirectory = argDirectory
 End Property
 
 Public Property Let setDirectory2(argDirectory)
-	With CreateObject("Scripting.FileSystemObject")
-		If Not .FolderExists(argDirectory) Then
-			Err.Raise 1000
-		End If
-	End With
-
-	directory2 = argDirectory
+	GFs2.setDirectory = argDirectory
 End Property
 
 Public Property Let setPattern(argPattern)
-	'不正な正規表現であればエラー発生 / an error occure if invalid
-	With CreateObject("VBScript.RegExp")
-		.Pattern = argPattern
-		.Test("testExec")
-	End With
-	pattern = argPattern
+	GFs1.setPattern = argPattern
+	GFs2.setPattern = argPattern
 End Property
 
 Public Property Let setFilenameResult1(argFilename)
@@ -57,33 +40,32 @@ Public Property Let setFilenameResultBoth(argFilename)
 End Property
 
 Private Sub Class_Initialize()
+	Set GFs1 = New clsGetFilenames
+	Set GFs2 = New clsGetFilenames
+
 	'既定値はすべてのファイル / defalut is all files
-	pattern = ".*"
+	GFs1.setPattern = ".*"
+	GFs2.setPattern = ".*"
+End Sub
+
+Private Sub Class_Terminate()
+	Set GFs1 = Nothing
+	Set GFs2 = Nothing	
 End Sub
 
 Public Sub compareFilesInFolders()
-	Dim GFs1,GFs2
 	Dim ary2
 	Dim dic1,dic2,dicBoth
 	Dim filename
 
-	Set GFs1 = New clsGetFilenames
-	Set GFs2 = New clsGetFilenames
 
-	GFs1.setDirectory = directory1
-	GFs2.setDirectory = directory2
-	GFs1.setPattern = pattern
-	GFs2.setPattern = pattern
+	call checkParam
+	WScript.Quit
 
 	'フォルダ1のディクショナリを２つ生成する
 	set dic1 = GFs1.getFilenamesDictionary()
 	'フォルダ2の配列を1つ生成する
 	ary2 = GFs2.getFilenamesArray()
-
-	'ファイル一覧を取得したのでオブジェクトを開放する
-	'release objects as file lists were made
-	Set GFs1 = Nothing
-	Set GFs2 = Nothing	
 
 	'差分格納用ディクショナリ生成
 	Set dic2 = CreateObject("Scripting.Dictionary")
@@ -108,13 +90,51 @@ Public Sub compareFilesInFolders()
 End Sub
 
 Private Sub writeResult(filename,dic)
-	Dim objFso
-	Set objFso = Wscript.CreateObject("Scripting.FileSystemObject")
+	Dim TF
 
-	With objFso.OpenTextFile(filename, 2)
-		.WriteLine(Join(dic.keys,vbCrLf))
-		.Close
+	With CreateObject("Scripting.FileSystemObject")
+		If .FileExists(filename) Then
+			Set TF = .OpenTextFile(filename, 2)
+		Else
+			Set TF = .CreateTextFile(filename)
+		End If
+
+		TF.WriteLine(Join(dic.keys,vbCrLf))
+		TF.Close
 	End With
+End Sub
+
+Private Sub checkParam()
+	Dim currentDir
+	Dim dir1,dir2
+
+	'カレントディレクトリ取得
+	With CreateObject("Scripting.FileSystemObject")
+		currentDir = .getParentFolderName(WScript.ScriptFullName)
+	End With
+
+	dir1 = GFs1.getDirectory
+	dir2 = GFs2.getDirectory
+
+	If dir1 = dir2 Then
+		If dir1 = currentDir Then
+			Err.Description = "検索ディレクトリがカレントディレクトリに設定されています"
+			Err.Number = 1000
+			Err.raise 1000
+		Else
+			Err.Description = "検索ディレクトリが同じです"
+			Err.Number = 1000
+			Err.raise 1000
+		End If
+	End IF
+
+	If dir1 = currentDir Or GFs2.getDirectory = currentDir Then
+		If msgbox("検索ディレクトリがカレントディレクトリに設定されています。実行しますか",vbYesNO) = vbNo Then
+			Err.Description = "検索ディレクトリがカレントディレクトリに設定されています"
+			Err.Number = 1000
+			Err.raise 1000
+		End If
+	End If
 End Sub
 
 'call execTest(dic1,dic2,dicBoth)
@@ -124,5 +144,9 @@ Private Sub execTest(d1,d2,d3)
 	msgbox Join(d3.keys,vbCrLf) & vbCrLf & vbCrLf & Join(d3.Items,vbCrLf)
 End Sub
 
+Private Sub execTestParam()
+	msgbox GFs1.getDirectory
+	msgbox GFs2.getDirectory
+End Sub
 
 End Class
