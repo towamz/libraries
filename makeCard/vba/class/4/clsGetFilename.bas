@@ -7,11 +7,11 @@ Private DIC_PICTURE_INFO As Object
 Private STR_PICTURE_PATH As String
 Private STR_USED_INFO_PATH As String
 
-'画像保存フォルダ名
+'画像保存フォルダ名 / folder name for pics
 Const STR_PICTURE_PATH_NAME As String = "picture"
-'前回実行時使用ファイル名保存ファイル
+'前回実行時使用ファイル名保存ファイル / text filename for recording used filenames
 Const STR_USED_INFO_NAME As String = "used.txt"
-'ファイル名から情報を分割するデミリタ
+'ファイル名から情報を分割するデミリタ / delimiter for getting information from filename
 Const STR_PICTURE_INFO_DELIMITER As String = "#"
 
 
@@ -56,7 +56,7 @@ Private Sub checkFolderFilesFirst()
                 WT.createTextfile
             End If
         End If
-    '使用済みファイル情報のテキストがない場合はここで空ファイルを作る
+    '使用済みファイル情報のテキストがない場合はここで空ファイルを作る / make a blank textfile if it does not exist
     Else
         WT.createTextfile
     End If
@@ -79,12 +79,12 @@ Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
     Dim usedFilePath As Variant
     Dim backupDic As Object
     
-    '既存のディクショナリは破棄する
+    '既存のディクショナリは破棄する / delete the current dic
     Set argDic = Nothing
     Set argDic = CreateObject("Scripting.Dictionary")
     Set backupDic = CreateObject("Scripting.Dictionary")
     
-    'フォルダ・ファイル存在確認
+    'フォルダ・ファイル存在確認 / check folder and files exist
     Call checkFolderFiles
     
     'ファイルパスを取得 / get filepath
@@ -107,6 +107,7 @@ Private Sub makeDic(ByRef argDic As Object, ByRef argPath As String)
     Loop
     
     'テキストファイルからのデータを削除した結果、count=0になった場合はバックアップをコピー
+    'copy the dic when count is 0 as result of deleting used files from the dic
     If argDic.Count = 0 Then
         Debug.Print "dic keys all deleted, recover now"
         Set argDic = backupDic
@@ -122,7 +123,7 @@ Private Function getInfo(ByRef argDic As Object, ByRef argPath As String) As Var
     Dim aryInfoFromFilename As Variant
     Dim lngRndNum As Long
 
-    'ディクショナリがない・要素0の場合は再取得する
+    'ディクショナリがない・要素0の場合は再取得する / get again when dic is not exist or its count is 0
     If argDic Is Nothing Then
         Debug.Print "dic make"
         Call makeDic(argDic, argPath)
@@ -130,12 +131,13 @@ Private Function getInfo(ByRef argDic As Object, ByRef argPath As String) As Var
     
     If argDic.Count = 0 Then
         'すべてのファイルを読み込んだので、テキストファイルを削除し空ファイルを作成する
+        'delete and make a textfile as readling all files
         Debug.Print "dic remake"
         WT.renewTextfile
         Call makeDic(argDic, argPath)
     End If
 
-    '乱数生成
+    '乱数生成　/ make a random number
     lngRndNum = Rnd * argDic.Count
     
     'ファイル名を取得する / get filename
