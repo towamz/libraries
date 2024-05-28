@@ -111,6 +111,13 @@ Public Function getLastRow() As Long
     dataLastRow = -1
     
     For Each searchColumn In searchColumns
+
+        'データ範囲最終にデータがあった場合は最終行を設定してループを抜ける(これ以上検索不要)
+        'exit for if data exist in the last row(no need to further search)
+        If Cells(searchLastRow, searchColumn) <> "" Then
+            dataLastRow = searchLastRow
+            Exit For
+        End If
         
         currentLastRow = Cells(searchLastRow, searchColumn).End(xlUp).row
 
