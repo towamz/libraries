@@ -4,10 +4,13 @@ Private searchWorksheet As Worksheet
 Private searchFirstRow As Long
 Private searchLastRow As Long
 Private searchColumns As Object
+Private dataLastRow As Long
 
 Public Property Set setSearchWorksheet(worksheetObj As Worksheet)
 
     Set searchWorksheet = worksheetObj
+
+    dataLastRow = -1
 
 End Property
 
@@ -18,6 +21,8 @@ Public Function setSearchWorksheetString(worksheetString As String, Optional wor
     End If
     
     Set searchWorksheet = Workbooks(workbookString).Worksheets(worksheetString)
+
+    dataLastRow = -1
 
 End Function
 
@@ -46,6 +51,8 @@ Public Property Let setSearchFirstRow(rowNumber As Long)
         searchFirstRow = rowNumber
     End If
 
+    dataLastRow = -1
+
 End Property
 
 Public Property Let setSearchLastRow(rowNumber As Long)
@@ -58,6 +65,8 @@ Public Property Let setSearchLastRow(rowNumber As Long)
     If Err.Number = 0 Then
         searchLastRow = rowNumber
     End If
+
+    dataLastRow = -1
 
 End Property
 
@@ -80,6 +89,8 @@ Public Property Let setSearchColumn(ColumnString As String)
         searchColumns.Add columnNumber, 0
     End If
 
+    dataLastRow = -1
+
 End Property
 
 Public Property Get getSearchColumns()
@@ -100,6 +111,8 @@ Public Sub clearSearchColumns()
     '検索対象列保存用ディクショナリを破棄・再作成する / destroy and recreate dic
     Set searchColumns = Nothing
     Set searchColumns = CreateObject("Scripting.Dictionary")
+    
+    dataLastRow = -1
 
 End Sub
 
@@ -116,6 +129,9 @@ Private Sub Class_Initialize()
 
     '検索対象列保存用ディクショナリ
     Set searchColumns = CreateObject("Scripting.Dictionary")
+    
+    'データ最終行を-1(データなし)で初期化 / set dataLastRow is -1 (deta does not exsit)
+    dataLastRow = -1
 
 End Sub
 
@@ -124,16 +140,15 @@ Private Sub Class_Terminate()
 End Sub
 
 
+'データ最終行番号を取得 / get the data last row number
 Public Function getLastRow() As Long
     Dim searchColumn As Variant
-    Dim dataLastRow As Long
     Dim currentLastRow As Long
     
     '--------------初期確認--------------
     If searchWorksheet Is Nothing Then
         Err.Raise 1001, , "検索対象シートが設定されていません。"
-    End If
-    
+    End If   
     
     If searchFirstRow > searchLastRow Then
         Err.Raise 1002, , "検索対象行(開始) < 検索対象行(終了)に設定してください。" & vbCrLf & "開始行:" & searchFirstRow & vbCrLf & "終了行:" & searchLastRow
@@ -143,12 +158,11 @@ Public Function getLastRow() As Long
         Err.Raise 1003, , "検索対象列が設定されていません。"
     End If
     '--------------初期確認終了--------------
-    
+
     '行番号を-1(データなし)に設定
     dataLastRow = -1
     
     For Each searchColumn In searchColumns
-        
         'データ範囲最終にデータがあった場合は最終行を設定してループを抜ける(これ以上検索不要)
         'exit for if data exist in the last row(no need to further search)
         If searchWorksheet.Cells(searchLastRow, searchColumn) <> "" Then
@@ -173,13 +187,26 @@ Public Function getLastRow() As Long
         '今回取得した最終行が今まで最終行より大きい場合は書き換え
         'overwrite if the currentRow is bigger than the previous Row
         If dataLastRow < currentLastRow Then
-            
             dataLastRow = currentLastRow
-        
         End If
-    
     Next
 
     getLastRow = dataLastRow
 
 End Function
+
+
+'データ範囲のrangeオブジェクトを取得(行全体) / get data range object(entire rows)
+Public Function getEntireRows() As Range
+    
+    Call getLastRow
+    
+    If dataLastRow = -1 Then
+        'データがないときはnothingを返す / set nothing if data does not exist
+        Set getEntireRows = Nothing
+    Else
+        Set getEntireRows = searchWorksheet.Rows(searchFirstRow & ":" & dataLastRow)
+    End If
+
+End Function
+
