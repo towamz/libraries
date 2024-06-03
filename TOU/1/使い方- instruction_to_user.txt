@@ -1,0 +1,5 @@
+1.vbsで画像の名前を変更する
+2.vbaで画像をwordに挿入する
+
+1.change pics name by vbs
+2.insert pics by vba
