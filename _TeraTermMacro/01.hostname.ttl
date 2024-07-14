@@ -1,0 +1,23 @@
+serverPassword = 'password'
+Hostname = 'mysqlserver'
+
+connectStr = 'localhost:22 /ssh2 /auth=password /user=user /passwd='
+
+strconcat connectStr serverPassword
+connect connectStr
+
+; pause 10
+wait 'ABSOLUTELY NO WARRANTY' 'Last login'
+
+
+; ホストネーム変更 / change the hostname
+HostnameStr = 'sudo hostname '
+strconcat HostnameStr Hostname
+sendln HostnameStr
+
+; sudo実行でパスワードを聞かれる / the password is asked as sudo is executed
+pause 1
+sendln serverPassword
+
+pause 1
+sendln 'exit'

@@ -1,0 +1,151 @@
+serverPassword = 'password'
+DBrootPassword = 'password'
+DBuserPassword = 'password'
+Hostname = 'mysqlserver'
+
+connectStr = 'localhost:22 /ssh2 /auth=password /user=user /passwd='
+
+strconcat connectStr serverPassword
+connect connectStr
+
+; pause 10
+wait 'ABSOLUTELY NO WARRANTY' 'Last login'
+
+; sudoを始めて実行するとパスワードを聞かれるので、先に実行しておく
+; execute sudo first as the password is asked first time.
+pause 1
+sendln 'sudo cat /etc/issue'
+pause 1
+sendln serverPassword
+
+pause 1
+wait Hostname
+
+pause 10
+sendln 'sudo apt-get -y upgrade'
+
+
+pause 10
+wait Hostname
+sendln 'sudo apt install -y mysql-server mysql-client'
+
+
+pause 10
+wait Hostname
+sendln 'sudo mysql_secure_installation'
+
+; パスワード強度設定をNo
+pause 10
+wait 'VALIDATE PASSWORD'
+pause 1
+sendln 'n'
+
+; 匿名ユーザーを削除
+pause 1
+wait 'Remove anonymous users?'
+pause 1
+sendln 'y'
+
+; rootのリモートログインを禁止
+pause 1
+wait 'remotely'
+pause 1
+sendln 'y'
+
+; テストDB/userを削除
+pause 1
+wait 'remoRemove test database and access to it?'
+pause 1
+sendln 'y'
+
+; 変更を即時反映するか
+pause 1
+wait 'Reload privilege tables now?'
+pause 1
+sendln 'y'
+
+pause 60
+
+; mysqlにログイン
+pause 5
+sendln 'sudo mysql -u root'
+
+
+; rootパスワード設定
+pause 5
+DBRootCreateStr = "ALTER USER 'root'@'localhost' IDENTIFIED BY '"
+strconcat DBRootCreateStr DBrootPassword
+strconcat DBRootCreateStr "';"
+sendln DBRootCreateStr
+
+
+; DB作成
+pause 5
+sendln 'CREATE DATABASE DB1;'
+
+
+; ユーザー作成・権限付与
+pause 5
+
+DBUserCreateStr = "CREATE USER 'user'@'localhost' IDENTIFIED BY '"
+strconcat DBUserCreateStr DBuserPassword
+strconcat DBUserCreateStr "';"
+sendln DBUserCreateStr
+
+pause 5
+sendln "GRANT ALL ON DB1.* TO 'user'@'localhost';"
+
+; rootをログアウトする
+pause 5
+sendln "exit"
+
+; ユーザーでログインする
+pause 5
+sendln "sudo mysql -u user -p DB1;"
+pause 1
+sendln "1"
+
+; テーブルを作成する
+pause 5
+sendln "CREATE TABLE `addressBook` ("
+pause 1
+sendln "`id` int(10) NOT NULL AUTO_INCREMENT,"
+pause 1
+sendln "`name` varchar(255) NOT NULL,"
+pause 1
+sendln "`age` int(3) NOT NULL,"
+pause 1
+sendln "`address` varchar(255),"
+pause 1
+sendln "PRIMARY KEY (`id`)"
+pause 1
+sendln ");"
+pause 1
+
+; テーブルを確認する
+pause 5
+sendln "DESC addressBook;"
+
+pause 60
+
+
+; データ挿入
+pause 5
+sendln "INSERT INTO addressBook (name,age,address) VALUES ('towamz', 20, 'Tokyo');"
+
+; select実行
+pause 5
+sendln "SELECT * FROM addressBook;"
+
+pause 60
+
+; userをログアウトする
+pause 5
+sendln "exit"
+
+; serverをシャットダウン
+pause 5
+sendln "sudo shutdown -h now"
+
+
+messagebox "終わりました" "終了"
