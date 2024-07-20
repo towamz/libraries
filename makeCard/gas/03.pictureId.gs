@@ -1,16 +1,33 @@
-function getPictureIdList() {
-  getPicsId();
-  removeUsedPicsId();
+function getPictureId(sheets, folderId) {
+  var sheet = sheets.getSheetByName('current');
+  var sheetUsed = sheets.getSheetByName('used');
+
+  var infoRange = sheet.getRange("A1");
+
+  // pictureIDがなくなったらリストを再作成
+  if(infoRange.isBlank()){
+    console.log('pictureId were used all')
+    var sheetUsed = sheets.getSheetByName('used');
+    sheetUsed.getRange("A:A").clear(); //現在シートに残っているIDを削除する
+
+    getPicturesIdList(sheets, folderId);
+  }
+
+  pictureId = infoRange.getValue();
+
+  sheetUsed.appendRow([pictureId]);
+  sheet.deleteRow(1)
+
+  return pictureId;
 }
 
+function getPicturesIdList(sheets, folderId){
+  getPicturesIdListDetail(sheets, folderId)
+  removeUsedPicturesId(sheets, folderId) 
+}
 
-function getPicsId() {
-  const sheetId = '';
-  const folderId = '';
-
-  var sheets = SpreadsheetApp.openById(sheetId);
+function getPicturesIdListDetail(sheets, folderId) {
   var sheet = sheets.getSheetByName('current');
-
 
   var folder = DriveApp.getFolderById(folderId);
   var images = folder.getFilesByType(MimeType.JPEG);
@@ -35,9 +52,7 @@ function getPicsId() {
 }
 
 
-function removeUsedPicsId() {
-  const sheetId = '';
-  var sheets = SpreadsheetApp.openById(sheetId);
+function removeUsedPicturesId(sheets, folderId) {
   var sheet = sheets.getSheetByName('current');
   var lastRow = sheet.getLastRow();
 
@@ -54,7 +69,7 @@ function removeUsedPicsId() {
     //console.log(i + '--' + checkRange.getValue());
 
     if(!checkRange.getValue()==0){
-      checkRange.setBackground('green');  
+      //checkRange.setBackground('green');  
       sheet.deleteRow(i)
     }
   }
@@ -66,6 +81,6 @@ function removeUsedPicsId() {
     var sheetUsed = sheets.getSheetByName('used');
     sheetUsed.getRange("A:A").clear(); //現在シートに残っているIDを削除する
     console.log("再実行");
-    getPicsId();
+    getPicturesIdListDetail(sheets, folderId);
   }
 }

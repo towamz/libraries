@@ -1,0 +1,59 @@
+function insertContents(table, sheets, folderId, rowNum, colNum) {
+  for(var i=0; i<rowNum; i = i + 2){
+    var row = table.getRow(i);
+    var row2 = table.getRow(i+1);
+
+    for(var j=0; j<colNum; j++){
+      console.log(i + '--' + j);
+      var cell = row.getCell(j);
+      var cell2 = row2.getCell(j);
+      // cell.setBackgroundColor('#00FF00');
+      // cell2.setBackgroundColor('#0000FF');
+
+      var pictureId = getPictureId(sheets, folderId)
+
+      console.log(pictureId);
+      var image = DriveApp.getFileById(pictureId);
+      var imageFilename = image.getName()
+      var imageFilenameSplit = imageFilename.split("#");
+
+      cell2.setText(imageFilenameSplit[1]);
+
+      // 画像部分
+      // console.log(typeof(image));
+      console.log(Object.prototype.toString.call(image));
+
+
+
+      var size = ImgApp.getSize(image.getBlob());
+  
+      var currentHeight = size.height;
+      var currentWidth = size.width;
+
+      var aspectRatio = currentWidth / currentHeight;
+
+      //207/147;
+      // 横の方が大きいとき
+      if(aspectRatio>1){
+        // 本来は回転させないといけない
+        // widthで調整
+        //image.getBlob().setRotation(90);
+        var targetRatio = 207/currentWidth;
+      }else{
+        // 回転させなくてOK
+        // heightで調整
+        var targetRatio = 207/currentHeight;
+      }
+
+      var targetHeight = currentHeight*targetRatio;
+      var targetWidth = currentWidth*targetRatio;
+
+      console.log(currentHeight + '---' + currentWidth);
+      console.log(targetHeight + '---' + targetWidth);
+
+      var insPic = cell.insertImage(0, image).setHeight(targetHeight).setWidth(targetWidth);
+      cell.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+
+    }
+  }
+}
