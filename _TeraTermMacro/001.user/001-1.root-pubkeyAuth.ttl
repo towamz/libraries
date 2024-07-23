@@ -1,0 +1,41 @@
+; パラメータを読み込む
+include 'parameter3.dat'
+
+; sshキー保存フォルダ作成
+mkdirStr = 'mkdir -p /root/.ssh'
+sendln mkdirStr
+
+
+; 公開鍵認証を設定
+pause waitsec[1]
+chdirStr = 'cd /root/.ssh'
+sendln chdirStr
+
+pause waitsec[1]
+sendln 'ls -l | grep authorized_keys'
+
+timeout = waitsec[1]
+wait 'authorized_keys' ; コマンド実行で1行出力されるので２回出ることを確認する
+wait 'authorized_keys'
+
+if result = 0 then
+    sendln 'touch authorized_keys'
+endif
+
+pause waitsec[1]
+publickeyfileStr = serverPublicKeyLocalPathRoot
+strconcat publickeyfileStr 'root\id_ed25519.pub'
+
+fileopen fhandle2 publickeyfileStr 0
+filereadln fhandle2 line2
+while result=0
+    echoStr = 'echo '
+    strconcat echoStr line2
+    strconcat echoStr '>>authorized_keys'
+    sendln echoStr
+
+    pause waitsec[1]
+    filereadln fhandle2 line2
+endwhile
+fileclose fhandle2
+

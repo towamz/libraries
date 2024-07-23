@@ -1,0 +1,91 @@
+; パラメータを読み込む
+include 'parameter3.dat'
+
+fileopen fhandle serverUserListPath 0
+filereadln fhandle line
+while result=0
+    ;groupmatchstr1=ユーザー名
+    ;groupmatchstr2=パスワード
+    strsplit line ',' 2
+
+    ; ユーザー追加
+    pause waitsec[1]
+    useraddStr = 'useradd '
+    strconcat useraddStr groupmatchstr1
+    sendln useraddStr
+
+
+    ; パスワード設定
+    pause waitsec[1]
+    passwdStr = 'passwd '
+    strconcat passwdStr groupmatchstr1
+    sendln passwdStr
+    ; パスワードは２回入力する
+    pause waitsec[1]
+    sendln groupmatchstr2
+    pause waitsec[1]
+    sendln groupmatchstr2
+
+
+    ; sudo権限付与
+    ; gpasswd -a username sudo 
+    pause waitsec[1]
+    sudoStr = 'gpasswd -a '
+    strconcat sudoStr groupmatchstr1
+    strconcat sudoStr ' sudo'
+    sendln sudoStr
+
+
+    ; ホームディレクトリ作成
+    pause waitsec[1]
+    sendln 'cd /home'
+
+    pause waitsec[1]
+    mkdirStr = 'mkdir -p '
+    strconcat mkdirStr groupmatchstr1
+    strconcat mkdirStr '/.ssh'
+    sendln mkdirStr
+
+
+    ; 公開鍵認証を設定
+    pause waitsec[1]
+    chdirStr = 'cd /home/'
+    strconcat chdirStr groupmatchstr1
+    strconcat chdirStr '/.ssh'
+    sendln chdirStr
+
+    pause waitsec[1]
+    sendln 'ls -l | grep authorized_keys'
+
+    timeout = waitsec[1]
+    wait 'authorized_keys' ; コマンド実行で1行出力されるので２回出ることを確認する
+    wait 'authorized_keys'
+
+    if result = 0 then
+        sendln 'touch authorized_keys'
+    endif
+
+    pause waitsec[1]
+    publickeyfileStr = serverPublicKeyLocalPathRoot
+    strconcat publickeyfileStr groupmatchstr1
+    strconcat publickeyfileStr '\id_ed25519.pub'
+
+    messagebox publickeyfileStr 'test'
+
+    fileopen fhandle2 publickeyfileStr 0
+    filereadln fhandle2 line2
+    while result=0
+        echoStr = 'echo '
+        strconcat echoStr line2
+        strconcat echoStr '>>authorized_keys'
+        sendln echoStr
+
+        pause waitsec[1]
+        filereadln fhandle2 line2
+    endwhile
+    fileclose fhandle2
+
+    pause waitsec[1]
+    filereadln fhandle line
+endwhile
+fileclose fhandle
