@@ -1,0 +1,21 @@
+; パラメータを読み込む
+include 'parameter.dat'
+
+pause waitsec[1]
+privatekeyfileStr = serverPublicKeyLocalPathRoot
+strconcat privatekeyfileStr serverUsername
+strconcat privatekeyfileStr '\id_ed25519'
+
+
+;connectStr = 'localhost:22 /ssh2 /auth=publickey /user=user /passwd=pass /keyfile=private-key-file'
+connectStr = ''
+strconcat connectStr serverIp
+strconcat connectStr ':22 /ssh2 /auth=publickey /user='
+strconcat connectStr serverUsername
+strconcat connectStr ' /passwd='
+strconcat connectStr serverPassphrase
+strconcat connectStr ' /keyfile='
+strconcat connectStr privatekeyfileStr
+
+connect connectStr
+
