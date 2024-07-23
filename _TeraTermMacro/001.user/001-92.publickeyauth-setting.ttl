@@ -1,0 +1,37 @@
+; パラメータを読み込む
+include 'parameter.dat'
+
+pause waitsec[1]
+sendln 'cd'
+pause waitsec[1]
+sendln 'cd .ssh'
+
+pause waitsec[1]
+sendln 'ls -l | grep authorized_keys'
+
+timeout = waitsec[1]
+wait 'authorized_keys' ; コマンド実行で1行出力されるので２回出ることを確認する
+wait 'authorized_keys'
+
+if result = 0 then
+    sendln 'touch authorized_keys'
+endif
+
+pause waitsec[1]
+publickeyfileStr = serverPublicKeyLocalPathRoot
+strconcat serverPublicKeyLocalPath serverUsername
+strconcat serverPublicKeyLocalPath '\id_ed25519.pub'
+
+
+fileopen fhandle serverPublicKeyLocalPath 0
+filereadln fhandle line
+while result=0
+    echoStr = 'echo '
+    strconcat echoStr line
+    strconcat echoStr '>>authorized_keys'
+    sendln echoStr
+
+    pause waitsec[1]
+    filereadln fhandle line
+endwhile
+

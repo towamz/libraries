@@ -1,0 +1,7 @@
+serverIp = 'localhost'
+serverUserListPath = "C:\teratermMacro\userlist.txt"
+
+intdim waitsec 3
+waitsec[0] = 1
+waitsec[1] = 10
+waitsec[2] = 60
