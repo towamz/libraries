@@ -1,0 +1,14 @@
+; パラメータを読み込む
+include 'parameter-wireguard.dat'
+
+; sudoを始めて実行するとパスワードを聞かれるので、先に実行しておく
+; execute sudo first as the password is asked first time.
+pause waitsec[0]
+sendln 'sudo cat /etc/issue'
+pause waitsec[0]
+sendln serverPassword
+
+
+; wireguardをインストール
+pause waitsec[1]
+sendln "sudo apt install -y wireguard"

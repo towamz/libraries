@@ -1,0 +1,11 @@
+serverIp = 'localhost'
+serverUsername = 'root'
+serverPassword = ''
+serverPassphrase = ''
+serverWgconfLocalPath = 'C:\wireguard\server\wg0.conf'
+
+
+intdim waitsec 3
+waitsec[0] = 1
+waitsec[1] = 10
+waitsec[2] = 60

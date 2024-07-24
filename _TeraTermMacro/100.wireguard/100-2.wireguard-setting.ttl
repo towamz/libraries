@@ -1,0 +1,71 @@
+; パラメータを読み込む
+include 'parameter-wireguard.dat'
+
+; sudoを始めて実行するとパスワードを聞かれるので、先に実行しておく
+; execute sudo first as the password is asked first time.
+pause waitsec[0]
+sendln 'sudo cat /etc/issue'
+pause waitsec[0]
+sendln serverPassword
+
+
+; wireguardのIF設定を流し込む
+scpsend serverWgconfLocalPath '/etc/wireguard/wg0.conf'
+pause waitsec[2]
+sendln "sudo cat /etc/wireguard/wg0.conf"
+
+
+; パケットフォワード許可
+pause waitsec[1]
+sendln "sudo cp /etc/sysctl.conf /etc/sysctl.conf.bak"
+
+pause waitsec[1]
+sendln "sudo vi /etc/sysctl.conf"
+
+pause waitsec[1]
+send "/"
+
+pause waitsec[1]
+sendln "net.ipv4.ip_forward=1"
+
+pause waitsec[1]
+sendln ""
+
+
+pause waitsec[1]
+sendln "i"
+
+    ; oで編集モードに入ったとき、#が先頭についてる現象があった
+    ; esc
+    ;pause waitsec[1]
+    ;send #27
+
+    ;pause waitsec[1]
+    ;sendln "dd"
+
+    ;pause waitsec[1]
+    ;sendln "i"
+
+pause waitsec[1]
+sendln "net.ipv4.ip_forward=1"
+ 
+; esc
+pause waitsec[1]
+send #27
+
+pause waitsec[1]
+sendln ":wq"
+
+; パケットフォワード許可設定反映
+pause waitsec[1]
+sendln "sysctl -p"
+
+pause waitsec[1]
+sendln "sudo systemctl enable wg-quick@wg0"
+
+pause waitsec[1]
+sendln "sudo systemctl start wg-quick@wg0"
+
+pause waitsec[1]
+sendln "sudo wg"
+
