@@ -1,0 +1,94 @@
+const calendarId = 'gmailaddress@gmail.com';
+const ssId = 'spreadsheetId';
+const shName = '2411';
+
+const stTime = 21;
+const edDateOffset = 1; //開始日と同日であれば0、翌日であれば1など
+const edTime = 7;
+
+const eventTitle = 'テストイベントタイトル';
+
+const locationString = '皇居';
+const descriptionString = 
+`説明に入力する文章
+`;
+
+
+function createShiftEvents(){
+  const calendar = CalendarApp.getCalendarById(calendarId);
+  const targetDate = getTargetDate();
+  
+  const options = {
+    description: descriptionString,
+    location: locationString
+  }
+
+  for(date of targetDate){
+    if(true){
+      const y = date.getFullYear();
+      const M = date.getMonth()
+      const d = date.getDate()
+
+      const startDate = new Date(y, M, d, stTime)
+      const endDate = new Date(y, M, d+edDateOffset, edTime)
+
+      if(checkDuplication(startDate)){
+        console.log("作成します",eventTitle, startDate, endDate, options);
+        const event = calendar.createEvent(eventTitle, startDate, endDate, options);
+        event.setColor(CalendarApp.EventColor.PALE_RED)
+
+      }else{
+        console.log("重複しています",eventTitle, startDate, endDate, options);
+      }
+    }
+  }
+}
+
+function getTargetDate(){
+  // テスト用コード
+  // let targetDate = [];
+  // targetDate.push(new Date(2024,9,20));
+  // return targetDate;
+
+  const ss = SpreadsheetApp.openById(ssId);
+  const sh = ss.getSheetByName(shName);
+  const targetDate = []
+  
+  for(let i = 1; i<32; i++){
+    let flg = sh.getRange("B" + i).getValue();
+
+    if(flg=="y"){
+      targetDate.push(sh.getRange("A" + i).getValue());
+    }
+  }
+  return targetDate;
+}
+
+function checkDuplication(date){
+  const calendar = CalendarApp.getCalendarById(calendarId);
+
+  const y = date.getFullYear();
+  const M = date.getMonth();
+  const d = date.getDate();
+
+  //日付~日付+1で、日付の終日が対象になる
+  const stDate = new Date(y, M, d);
+  const enDate = new Date(y, M, d+1);
+
+  const events = calendar.getEvents(stDate, enDate)
+
+  for(const event of events){
+    const eventStDateTime = new Date(event.getStartTime());
+    const eventStDate = new Date(eventStDateTime.getFullYear(),eventStDateTime.getMonth(),eventStDateTime.getDate());
+
+    //(予定のタイトルが同じ)and(開始日が同じ)ときは重複と判定する
+    if(event.getTitle()==eventTitle){
+      if(stDate.getTime() == eventStDate.getTime()){
+        return false;
+      }
+    }
+  }
+  //ループを抜け重複なしのときはtrueを返す
+  return true;
+}
+
