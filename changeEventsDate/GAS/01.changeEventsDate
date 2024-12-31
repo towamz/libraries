@@ -1,0 +1,80 @@
+function changeEventDateMain(){
+  for(var i=0;i<2;i++){
+    var targetEventIds = getTargetEventIds(i);
+    var targetDate = getTargetDate(i);
+
+    if(!targetEventIds || !targetDate){
+      console.log("an error occurred");
+      return false;
+    }
+
+    changeEventDate(targetEventIds, targetDate);
+ }
+ 
+}
+
+
+function changeEventDate(eventIds, targetDate){
+    for(const eventId of eventIds){
+      var event = CalendarApp.getEventById(eventId);
+      event.setAllDayDate(targetDate);
+    }
+}
+
+
+function getTargetDate(num){
+  var targetDate; 
+  var today = new Date();
+  var year = today.getFullYear();
+  var month = today.getMonth();
+  var date = today.getDate();
+
+  console.log(year, month, date);
+
+  if(date > 15){
+    month +=1;
+  }
+
+  switch (num) {
+    case 0:
+      targetDate = new Date(year, month, 31);
+      break;
+    case 1:
+      targetDate = new Date(year, month+1, 1);
+      break;
+    default:
+      console.log('num not found');
+      return false;
+  }
+
+  return targetDate;
+}
+
+
+
+function getTargetEventIds(num){
+  var targetEventIds = [];
+
+  switch (num) {
+    case 0:
+      targetEventIds = [
+                  'aaaaa@google.com',
+                  'bbbbb@google.com'
+                  ]    
+      break;
+    case 1:
+      targetEventIds = [
+                  'ccccc@google.com',
+                  'ddddd@google.com'
+                  ]    
+      break;
+    default:
+      console.log('num not found');
+      return false;
+
+  }
+
+  return targetEventIds;
+
+}
+
