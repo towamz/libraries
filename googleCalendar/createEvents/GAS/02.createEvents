@@ -1,0 +1,107 @@
+function createEventsByShift() {
+  const calendar = CalendarApp.getCalendarById(calendarId);
+
+  var data = getEventsInformation();
+
+  for(i=0; i<data.length; i++){
+    var options = {
+      description: data[i][2]
+    }
+
+    console.log("create", eventTitle, data[i][0], data[i][1], options);
+    var event = calendar.createEvent(eventTitle, data[i][0], data[i][1], options);
+    event.setColor(CalendarApp.EventColor.PALE_RED)
+    event.removeAllReminders();
+  }
+}
+
+
+function getEventsInformation(){
+  const ss = SpreadsheetApp.openById(ssId);
+  const sh = ss.getSheetByName(shName);
+
+  var editData = [];
+  var originData = sh.getDataRange().getValues();
+
+  originData = deleteDuplicationData(originData);
+
+  for(i=1; i<originData.length; i++){
+    var stDate = new Date(originData[i][0]);
+    var enDate = new Date(stDate);
+    var shift = originData[i][1];
+    var description = originData[i][2];
+
+    // 指定されたシフトに従って開始・終了時刻を設定する
+    switch (shift){
+      case "A":
+        stDate.setHours(9);
+        enDate.setHours(18);
+        break;
+      case "B":
+        stDate.setHours(11);
+        enDate.setHours(20);
+        break;
+      case "C":
+        stDate.setHours(14);
+        enDate.setHours(23);
+        break;
+      default:
+        // 配列データを作成しないで次のループ
+        continue;
+    }
+
+    editData.push([stDate, enDate, description]);
+  }
+
+  return editData;
+}
+
+
+function deleteDuplicationData(data){
+  const calendar = CalendarApp.getCalendarById(calendarId);
+
+  // タイトル行削除
+  data.splice(0, 1)
+
+  var deleteIndex = [];
+  var stDate = new Date(data[0][0]);
+  var enDate = new Date(data[data.length-1][0]);
+  enDate.setDate(enDate.getDate()+1);
+  console.log("steddate",stDate, enDate);
+
+  var stDateSerial = stDate.getTime();
+
+  const events = calendar.getEvents(stDate, enDate)
+
+  for(const event of events){
+    var currentStDate;
+
+    if(event.getTitle()==eventTitle){
+      if(event.isAllDayEvent()){
+        currentStDate = event.getAllDayStartDate();
+      }else{
+        currentStDate = event.getStartTime();
+        currentStDate.setHours(0);
+        currentStDate.setMinutes(0);
+        currentStDate.setSeconds(0);
+      }
+      var currentStDateSerial = currentStDate.getTime();
+      var dateDiff = (currentStDateSerial-stDateSerial)/86400000;
+      if(data[dateDiff][0].getTime()==currentStDate.getTime()){
+        //削除対象のインデックス番号を保存
+        deleteIndex.push(dateDiff);
+      }else{
+        console.log("delete Index err");
+      }
+    }
+  }
+
+  // 削除対象インデックス番号を降順に並び替える
+  deleteIndex.sort((a, b) => b - a);
+
+  for (let index of deleteIndex){
+    data.splice(index, 1);
+  }
+
+  return data;
+} 

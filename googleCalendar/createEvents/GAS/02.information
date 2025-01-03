@@ -1,0 +1,4 @@
+const ssId = 'xxxx';
+const shName = '2501';
+const calendarId = 'account@gmail.com';
+const eventTitle = "テスト";
