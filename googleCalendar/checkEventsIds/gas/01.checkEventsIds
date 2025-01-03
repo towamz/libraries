@@ -1,0 +1,15 @@
+calendarId = '@gmail.com';
+stDateString = "2025/1/5"
+edDateString = "2025/1/8"
+
+
+function checkEventId(){
+  const calendar = CalendarApp.getCalendarById(calendarId);
+  const stDate = new Date(stDateString)
+  const enDate = new Date(edDateString)
+  const events = calendar.getEvents(stDate, enDate)
+
+  for(const event of events){
+    console.log(event.getTitle()+'--'+event.getId());
+  }
+}
