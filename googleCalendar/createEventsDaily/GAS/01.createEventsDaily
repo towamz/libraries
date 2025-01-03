@@ -1,0 +1,71 @@
+calendarId = 'test@gmail.com';
+eventTitle = "タイ";
+locationString="location";
+stDateString = "2025/1/5"
+edDateString = "2025/1/8"
+
+function createEventsDaily() {
+  const calendar = CalendarApp.getCalendarById(calendarId);
+
+  const stDate = new Date(stDateString);
+  var enDate = new Date(edDateString);
+  enDate.setDate(enDate.getDate()+1);
+
+  const options = {
+    location: locationString
+  }
+
+
+  var currentStDate = new Date(stDate);
+  var currentEnDate = new Date(stDate);
+  currentEnDate.setDate(currentStDate.getDate()+1);
+
+  do{
+
+    console.log(currentStDate, currentEnDate);
+
+    if(checkDuplication(currentStDate)){
+      var event = calendar.createAllDayEvent(eventTitle, currentStDate, currentEnDate, options);
+      event.setColor(CalendarApp.EventColor.PALE_GREEN);
+    }
+
+    currentStDate.setDate(currentStDate.getDate()+1);
+    currentEnDate.setDate(currentEnDate.getDate()+1);
+  }while(enDate>currentStDate);
+
+}
+
+function checkDuplication(date){
+  const calendar = CalendarApp.getCalendarById(calendarId);
+
+  //日付~日付+1で、日付の終日が対象になる
+  var stDate = new Date(date);
+  var enDate = new Date(date);
+  enDate.setDate(enDate.getDate()+1);
+
+  const events = calendar.getEvents(stDate, enDate)
+
+  for(const event of events){
+    // console.log(event.getTitle(),event.getAllDayStartDate(), event.getAllDayEndDate());
+
+    var currentStDate = new Date(event.getAllDayStartDate());
+    var currentEnDate = new Date(event.getAllDayEndDate());
+    currentEnDate.setDate(currentEnDate.getDate()-1);
+
+    console.log(event.getTitle(), currentStDate, currentEnDate);
+
+    // 複数日イベントは対象外
+    if(currentStDate.getTime()!=currentEnDate.getTime()){
+      console.log("continue");
+      continue
+    //単日イベントかつタイトルが同じときは重複と判定してfalseを返す
+    }else if(event.getTitle()==eventTitle){
+      console.log("Duplication");
+      return false;
+    }
+
+  }
+  //ループを抜け重複なしのときはtrueを返す
+  console.log("create");
+  return true;
+}
