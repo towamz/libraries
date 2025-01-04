@@ -1,0 +1,60 @@
+function inputGmailMessages() {
+  const ss = SpreadsheetApp.openById(ssId);
+  const sh = ss.getSheetByName(shName);
+
+  var threadIdIndex = [];
+  var originData = sh.getDataRange().getValues();
+  console.log("origin->",originData.length, originData);
+  // データがないとき要素1個(値は"")の１次元配列が１次元配列の先頭に付加されて
+  // 最後の書き込みでエラーとなるため要素なしの配列として再定義する
+  if(originData.length==1&&originData[0].length==1&&originData[0][0]==""){
+      console.log("dataNotExist");
+      originData = [];
+  }else{
+    for(var i=0; i<originData.length; i++){
+      threadIdIndex.push([originData[i][0], i]);
+    }
+    console.log(threadIdIndex);
+  }
+
+  var threads = GmailApp.search(query, 0, 100);
+
+  outerLoop : for (var thread of threads){
+    threadId = thread.getId()
+
+    var msgs = thread.getMessages()
+    var msgCnt = msgs.length-1;
+    // 最後のメッセージを取得する(履歴があるため最後だけでよい)
+    var msg  = msgs[msgCnt]; 
+
+    // スプレッドシートから同じスレッドidがあるか検索する
+    // あれば、msgCntが同一か比較する
+    //   違うのであれば、メッセージで上書きする
+    //   同じであれば何もしない
+    // なければ、末尾に追加する
+    for(var i=0; i<threadIdIndex.length; i++){
+      console.log("check(threadId)-->", threadId, i, threadIdIndex[i][0]);
+      if(threadIdIndex[i][0]==threadId){
+        var currentIndex = threadIdIndex[i][1];
+        if(originData[currentIndex][1]!=msgCnt){
+          console.log("update->", currentIndex, [threadId, msgCnt, msg.getPlainBody()]);
+          // originData[i][0] = threadId; //threadIdは変わらないので変更しない
+          originData[currentIndex][1] = msgCnt;
+          originData[currentIndex][2] = msg.getPlainBody();
+        // メッセージ数が同じ場合は現在のデータと一致しているので何もしないで次のスレッドを処理する
+        }else{
+          console.log("continue->", currentIndex, originData[currentIndex]);
+        }
+        threadIdIndex.splice(i, 1);
+        console.log("update-threadIdIndex", threadIdIndex);
+        continue outerLoop;
+      }
+    }
+    // ループを抜けて該当スレッドIdがないことがわかったため末尾に追加
+    console.log("new->", originData.length, [threadId, msgCnt, msg.getPlainBody()]);
+    originData.push([threadId, msgCnt, msg.getPlainBody()]);
+
+  }
+  console.log("final->",originData.length, originData);
+  sh.getRange(1, 1, originData.length, 3).setValues(originData);
+}
