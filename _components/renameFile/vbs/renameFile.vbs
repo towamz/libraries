@@ -52,7 +52,7 @@ Function getFilename(folderBase, filenameBase)
     getFilename = tmpFilename
 End Function
 
-Sub createFiles()
+Sub renameFiles()
     Dim folderBase, filenameBase, filenameFrom, filenameTo
 
     filenameBase = FILENAME_BASE
@@ -66,5 +66,4 @@ Sub createFiles()
 End Sub
 
 
-
-call createFiles()
+call createFirenameFilesles()
