@@ -66,4 +66,4 @@ Sub renameFiles()
 End Sub
 
 
-call createFirenameFilesles()
+call renameFiles()
