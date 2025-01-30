@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>文章生成ツール</title>
+</head>
+
+<body>
+    <label for="CampanyNameInput">会社名と名前を入力してください:</label>
+    <textarea id="CampanyNameInput" rows="2" cols="30" oninput="updateMessage()"></textarea>
+    <br>
+
+    <label for="staffnameInput">スタッフ名を入力してください:</label>
+    <input type="text" id="staffnameInput" oninput="updateMessage()" value="鈴木">  
+    <br>
+
+    <!-- group1 -->
+    <label for="toggleCheckbox1">
+        <input type="checkbox" id="toggleCheckbox1" onchange="toggleCheckboxRadioButtons(1)"> 有効にする
+    </label>
+
+    <div id="radioGroup1">
+        <label for="radio11">
+            <input type="radio" id="radio11" name="toggleRadioButtons1" value="11" disabled onclick="displayText(1, this.value)"> ラジオボタン1
+        </label>
+        <label for="radio12">
+            <input type="radio" id="radio12" name="toggleRadioButtons1" value="12" disabled onclick="displayText(1, this.value)"> ラジオボタン2
+        </label>
+        <label for="radio13">
+            <input type="radio" id="radio13" name="toggleRadioButtons1" value="13" disabled onclick="displayText(1, this.value)"> ラジオボタン3
+        </label>
+    </div>
+
+    <!-- group2 -->
+    <label for="toggleCheckbox2">
+        <input type="checkbox" id="toggleCheckbox2" onchange="toggleCheckboxRadioButtons(2)"> 有効にする
+    </label>
+
+    <div id="radioGroup2">
+        <label for="radio21">
+            <input type="radio" id="radio21" name="toggleRadioButtons2" value="21" disabled onclick="displayText(2, this.value)"> ラジオボタン1
+        </label>
+        <label for="radio22">
+            <input type="radio" id="radio22" name="toggleRadioButtons2" value="22" disabled onclick="displayText(2, this.value)"> ラジオボタン2
+        </label>
+        <label for="radio23">
+            <input type="radio" id="radio23" name="toggleRadioButtons2" value="23" disabled onclick="displayText(2, this.value)"> ラジオボタン3
+        </label>
+    </div>
+
+    <!-- group3 -->
+    <label for="toggleCheckbox3">
+        <input type="checkbox" id="toggleCheckbox3" onchange="toggleCheckboxRadioButtons(3)"> 有効にする
+    </label>
+
+    <div id="radioGroup3">
+        <label for="radio31">
+            <input type="radio" id="radio31" name="toggleRadioButtons3" value="31" disabled onclick="displayText(3, this.value)"> ラジオボタン1
+        </label>
+        <label for="radio32">
+            <input type="radio" id="radio32" name="toggleRadioButtons3" value="32" disabled onclick="displayText(3, this.value)"> ラジオボタン2
+        </label>
+        <label for="radio33">
+            <input type="radio" id="radio33" name="toggleRadioButtons3" value="33" disabled onclick="displayText(3, this.value)"> ラジオボタン3
+        </label>
+        <label for="radio34">
+            <input type="radio" id="radio34" name="toggleRadioButtons3" value="34" disabled onclick="displayText(3, this.value)"> ラジオボタン4
+        </label>
+        <label for="radio35">
+            <input type="radio" id="radio35" name="toggleRadioButtons3" value="35" disabled onclick="displayText(3, this.value)"> ラジオボタン5
+        </label>
+    </div>
+
+    <!-- group4 -->
+    <label for="toggleCheckbox4">
+        <input type="checkbox" id="toggleCheckbox4" onchange="toggleCheckboxRadioButtons(4)"> 有効にする
+    </label>
+
+    <div id="radioGroup4">
+        <label for="radio41">
+            <input type="radio" id="radio41" name="toggleRadioButtons4" value="41" disabled onclick="displayText(4, this.value)"> ラジオボタン1
+        </label>
+        <label for="radio42">
+            <input type="radio" id="radio42" name="toggleRadioButtons4" value="42" disabled onclick="displayText(4, this.value)"> ラジオボタン2
+        </label>
+        <label for="radio43">
+            <input type="radio" id="radio43" name="toggleRadioButtons4" value="43" disabled onclick="displayText(4, this.value)"> ラジオボタン3
+        </label>
+        <label for="radio44">
+            <input type="radio" id="radio44" name="toggleRadioButtons4" value="44" disabled onclick="displayText(4, this.value)"> ラジオボタン4
+        </label>
+    </div>
+
+    <!-- 結果表示用div -->
+    <p id="textCampany"></p>  
+    <p id="textName"></p> 
+    <p id="textBegin"></p>  
+    <div id="text1"></div>
+    <div id="text2"></div>
+    <div id="text3"></div>
+    <div id="text4"></div>
+
+    <script>
+        function updateMessage() {
+            var textCampany = document.getElementById("textCampany");
+            var textName = document.getElementById("textName");
+            var textBegin = document.getElementById("textBegin");
+            var campanyName = document.getElementById("CampanyNameInput").value.split(/\r?\n/);
+            var staffName = document.getElementById("staffnameInput").value;
+
+            var campany = campanyName[0] || "";
+            var name = campanyName[1] || "";
+
+            textCampany.innerHTML = campany;
+            if (name.trim() === "") {
+                textName.innerHTML = "";
+            } else {
+                name = name.replace(/[　\s]+/g, " ");           
+                textName.innerHTML = name + " 様";
+            }
+            var tmpMsg = "平素よりお世話になっております<br>";
+            tmpMsg += "株式会社ABCの" + staffName + "と申します。";
+            textBegin.innerHTML = tmpMsg;
+        }
+
+        function toggleCheckboxRadioButtons(indexNumber) {
+            const checkbox = document.getElementById('toggleCheckbox' + indexNumber);
+            const radioButtons = document.getElementsByName('toggleRadioButtons' + indexNumber);
+            const isChecked = checkbox.checked;
+
+            if (isChecked) {
+                radioButtons.forEach(radio => {
+                    radio.disabled = false;  
+                });
+
+                radioButtons[0].checked = true; 
+                displayText(indexNumber, radioButtons[0].value);
+            } else {
+                radioButtons.forEach(radio => {
+                    radio.disabled = true;  
+                    radio.checked = false;  
+                });
+
+                const outputElement = document.getElementById('text' + indexNumber);
+                outputElement.innerHTML = ''; 
+            }
+        }
+
+        function displayText(indexNumber, value) {
+            const output = document.getElementById('text' + indexNumber); 
+            switch (value) {
+                case '11':
+                    output.innerHTML = 'ラジオボタン1が選択されました。';
+                    break;
+                case '12':
+                    output.innerHTML = 'ラジオボタン2が選択されました。';
+                    break;
+                case '13':
+                    output.innerHTML = 'ラジオボタン3が選択されました。';
+                    break;
+                case '21':
+                    output.innerHTML = 'ラジオボタン1が選択されました。';
+                    break;
+                case '22':
+                    output.innerHTML = 'ラジオボタン2が選択されました。';
+                    break;
+                case '23':
+                    output.innerHTML = 'ラジオボタン3が選択されました。';
+                    break;
+                case '31':
+                    output.innerHTML = 'ラジオボタン1が選択されました。';
+                    break;
+                case '32':
+                    output.innerHTML = 'ラジオボタン2が選択されました。';
+                    break;
+                case '33':
+                    output.innerHTML = 'ラジオボタン3が選択されました。';
+                    break;
+                case '34':
+                    output.innerHTML = 'ラジオボタン4が選択されました。';
+                    break;
+                case '35':
+                    output.innerHTML = 'ラジオボタン5が選択されました。';
+                    break;
+                case '41':
+                    output.innerHTML = 'ラジオボタン1が選択されました。';
+                    break;
+                case '42':
+                    output.innerHTML = 'ラジオボタン2が選択されました。';
+                    break;
+                case '43':
+                    output.innerHTML = 'ラジオボタン3が選択されました。';
+                    break;
+                case '44':
+                    output.innerHTML = 'ラジオボタン4が選択されました。';
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
