@@ -157,14 +157,14 @@ Public Sub copySheet()
         End If
     Next
 
-    '末尾にシートをコピーする/ copy the sheet to the end of the book
-    wsData.Copy after:=wb.Sheets(wb.Sheets.Count)
-    
-    'シート名を変更(指定があるとき) / change the sheet name (when it was specified)
+    'シート名の指定がある場合は変更する(コピー先で変更するとシート名が重複しているとエラーとなるため、コピー元で変更する)
+    'change the sheet name if specified/ do it at originalBook as an error is occured when the name is dupulicate.
     If DataSheetRename <> "" Then
-        ActiveSheet.Name = DataSheetRename
+        wsData.Name = DataSheetRename
     End If
 
+    '末尾にシートをコピーする/ copy the sheet to the end of the book
+    wsData.Copy after:=wb.Sheets(wb.Sheets.Count)
 
 finally:
     'データファイルを閉じる/ close the data file
