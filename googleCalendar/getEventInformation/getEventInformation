@@ -1,0 +1,21 @@
+function getEventInformation() {
+  const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
+  let event = calendar.getEventById(EVENT_ID);
+
+  console.log(event.getTitle());
+  console.log(event.getDescription());
+  console.log(event.getLocation());
+  console.log(event.getColor());
+  console.log(event.getCreators());
+  console.log(event.getDateCreated());
+  console.log(event.getLastUpdated());
+  console.log(event.getAllTagKeys());
+
+  if(event.isAllDayEvent()){
+    console.log(event.getAllDayStartDate());
+    console.log(event.getAllDayEndDate());
+  }else{
+    console.log(event.getStartTime());
+    console.log(event.getEndTime());
+  }
+}

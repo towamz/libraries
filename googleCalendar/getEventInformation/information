@@ -1,0 +1,2 @@
+const CALENDAR_ID = 'xxxxx@gmail.com';
+const EVENT_ID = 'xxxxx@google.com';
