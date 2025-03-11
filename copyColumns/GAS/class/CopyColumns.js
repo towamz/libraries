@@ -1,9 +1,18 @@
 class CopyColumns{
-  // コンストラクタ
-  constructor(shIdOrig, shIdDest,ssIdOrig = -1,ssIdDest = -1) {
+  /**
+   * 指定された列をデータ用シートから結果用シートへコピーします
+   * 
+   * 
+   * @param {string|number} shIdNameOrig - データ用シート名またはシートID
+   * @param {string} shNameDest - 結果用シート名(シート新規追加)(既定値:'結果')
+   * @param {number} ssIdOrig - データ用スプレッドシートID(既定値:このスプレッドシート)
+   * @param {number} ssIdDest - 結果用スプレッドシートID(既定値:このスプレッドシート)
+   */
+  constructor(shIdNameOrig, shNameDest = '結果',ssIdOrig = -1,ssIdDest = -1) {
     let ssOrig;
     let ssDest;
 
+    // スプレッドシート取得
     if(ssIdOrig == -1){
       ssOrig = SpreadsheetApp.getActiveSpreadsheet();
     }else{
@@ -16,8 +25,21 @@ class CopyColumns{
       ssDest = SpreadsheetApp.openById(ssIdDest);   
     }
 
-    this._shOrig = ssOrig.getSheetById(shIdOrig);
-    this._shDest = ssDest.getSheetById(shIdDest);
+    // データシート取得
+    if(typeof shIdNameOrig === 'number') {
+      this._shOrig = ssOrig.getSheetById(shIdNameOrig);
+    } else {
+      this._shOrig = ssOrig.getSheetByName(shIdNameOrig);
+    }
+
+    // 結果シート生成
+    if(ssDest.getSheetByName(shNameDest)){
+      let dateTime = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyMMdd-HHmmss");
+      this._shDest = ssDest.insertSheet(shNameDest + dateTime);
+    }else{
+      this._shDest = ssDest.insertSheet(shNameDest);
+    }
+
     this._targetColumns = []; //要素なしの配列を宣言
   }
 
