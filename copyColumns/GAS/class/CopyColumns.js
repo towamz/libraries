@@ -9,36 +9,8 @@ class CopyColumns{
    * @param {number} ssIdDest - 結果用スプレッドシートID(既定値:このスプレッドシート)
    */
   constructor(shIdNameOrig, shNameDest = '結果',ssIdOrig = -1,ssIdDest = -1) {
-    let ssOrig;
-    let ssDest;
-
-    // スプレッドシート取得
-    if(ssIdOrig == -1){
-      ssOrig = SpreadsheetApp.getActiveSpreadsheet();
-    }else{
-      ssOrig = SpreadsheetApp.openById(ssIdOrig);
-    }
-
-    if(ssIdDest == -1){
-      ssDest = SpreadsheetApp.getActiveSpreadsheet();
-    }else{
-      ssDest = SpreadsheetApp.openById(ssIdDest);   
-    }
-
-    // データシート取得
-    if(typeof shIdNameOrig === 'number') {
-      this._shOrig = ssOrig.getSheetById(shIdNameOrig);
-    } else {
-      this._shOrig = ssOrig.getSheetByName(shIdNameOrig);
-    }
-
-    // 結果シート生成
-    if(ssDest.getSheetByName(shNameDest)){
-      let dateTime = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyMMdd-HHmmss");
-      this._shDest = ssDest.insertSheet(shNameDest + dateTime);
-    }else{
-      this._shDest = ssDest.insertSheet(shNameDest);
-    }
+    this._shOrig = this._getSheet(ssIdOrig, shIdNameOrig);
+    this._shDest = this._createSheet(ssIdDest, shNameDest);
 
     this._targetColumns = []; //要素なしの配列を宣言
   }
@@ -46,10 +18,14 @@ class CopyColumns{
 
   // setter/getter
   set targetColumns(columnStr) {
-    // 列名の有効性確認(エラーハンドルなし、プログラムを止める)
+    // 列名の有効性確認
     // 列記号(アルファベット)から列番号に変換して格納する
-    let colNum = this._shOrig.getRange(columnStr + "1").getColumn();
-    this._targetColumns.push(colNum);
+    try {
+      let colNum = this._shOrig.getRange(columnStr + "1").getColumn();
+      this._targetColumns.push(colNum);
+    } catch (error) {
+      console.log('無効な列名です: ' + columnStr);
+    }
   }
 
   get targetColumns() {
@@ -62,10 +38,32 @@ class CopyColumns{
 
 
   // メソッド
-  copyColumns(){
-    for (var i = 0; i < this._targetColumns.length; i++) {
-      let colData = this._shOrig.getRange(1,this._targetColumns[i],this._shOrig.getMaxRows(),1).getValues();
-      this._shDest.getRange(1,i+1,colData.length,1).setValues(colData);
+  _getSheet(ssId, shIdName) {
+    let ss = ssId == -1 ? SpreadsheetApp.getActiveSpreadsheet() : SpreadsheetApp.openById(ssId);
+    let sh = typeof shIdName  === 'number' ? ss.getSheetById(shIdName) : ss.getSheetByName(shIdName);
+
+    if (!sh) throw new Error('指定されたデータシート「' + shIdName + '」が存在しません。');
+    
+    return sh;
+  }
+
+  _createSheet(ssId, shIdName) {
+    let ss = ssId == -1 ? SpreadsheetApp.getActiveSpreadsheet() : SpreadsheetApp.openById(ssId);
+    let sh = typeof shIdName === 'number' ? ss.getSheetById(shIdName) : ss.getSheetByName(shIdName);
+
+    if (sh) {
+      let dateTimeString = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyMMdd-HHmmss");
+      return ss.insertSheet(shIdName + "-" + dateTimeString);  // 名前にタイムスタンプを追加
+    } else {
+      return ss.insertSheet(shIdName);  // 新しいシートをそのまま作成
     }
+  }
+
+  copyColumns(){
+    let dataOrig = this._shOrig.getDataRange().getValues();
+    // 配列に格納されるとA列(列番号1)が要素0になるので、(各列番号-1)する
+    let dataResult = dataOrig.map(row => this._targetColumns.map(columnNum => row[columnNum - 1]));
+
+    this._shDest.getRange(1,1,dataResult.length,dataResult[0].length).setValues(dataResult);
   }
 }
