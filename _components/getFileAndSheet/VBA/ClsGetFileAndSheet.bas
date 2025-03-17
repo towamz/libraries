@@ -77,7 +77,9 @@ End Sub
 Public Function getBook() As Workbook
     If WbOrig_ Is Nothing Then
         With CreateObject("Scripting.FileSystemObject")
-            If Not .FileExists(WbOrigAbsoluteFileName_) Then
+            If WbOrigAbsoluteFileName_ = "" Then
+                Call getAbsoluteFileName
+            ElseIf Not .FileExists(WbOrigAbsoluteFileName_) Then
                 GetOpenFilenameTitle_ = "指定されたファイルが見つかりませんでした:" & GetOpenFilenameTitle_
                 Call getAbsoluteFileName
             End If
