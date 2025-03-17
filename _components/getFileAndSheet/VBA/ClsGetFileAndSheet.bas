@@ -1,103 +1,46 @@
 Option Explicit
 
-Private DefaultDirectory_ As String
+Public DefaultDirectory As String
 
-Private WbOrig_ As Workbook
-Private WbOrigAbsoluteFileName_ As String
-Private WbOrigFileName_ As String
+Private Wb_ As Workbook
+Public AbsoluteFileName As String   'ブック名(フルパス)指定用変数 / 指定なしかファイルがない場合はダイアログ表示
+Public FileName As String '選択されたファイルが指定のファイル名であるか確認するための変数(チェック不要であれば空白)
 
-Private WsOrig_ As Worksheet
-Private WsOrigSheetName_ As String
-Private WsOrigSheetNames_() As String
+Private Ws_ As Worksheet
+Public SheetName As String  'シート名指定用変数 / 指定なしかシートがない場合はダイアログ表示
+Private SheetNames_() As String
+Private SheetNamesString_ As String
 
-Private GetOpenFilenameFileFilter_ As String
-Private GetOpenFilenameTitle_  As String
-
-
-Public Property Let DefaultDirectory(arg1 As String)
-    DefaultDirectory_ = arg1
-End Property
-    
-Public Property Get DefaultDirectory() As String
-    DefaultDirectory = DefaultDirectory_
-End Property
-
-Public Property Let WbOrigAbsoluteFileName(arg1 As String)
-
-'    With CreateObject("Scripting.FileSystemObject")
-'        If Not .FileExists(arg1) Then
-'            Err.Raise 1003, , "ファイルが存在しません。:" & arg1
-'        End If
-'    End With
-    
-    WbOrigAbsoluteFileName_ = arg1
-End Property
-    
-Public Property Get WbOrigAbsoluteFileName() As String
-    DefaultDirectory = WbOrigAbsoluteFileName_
-End Property
-
-Public Property Let WbOrigFileName(arg1 As String)
-    WbOrigFileName_ = arg1
-End Property
-    
-Public Property Get WbOrigFileName() As String
-    DefaultDirectory = WbOrigFileName_
-End Property
-
-Public Property Let WsOrigSheetName(arg1 As String)
-    WsOrigSheetName_ = arg1
-End Property
-    
-Public Property Get WsOrigSheetName() As String
-    DefaultDirectory = WsOrigSheetName_
-End Property
-
-Public Property Let GetOpenFilenameFileFilter(arg1 As String)
-'    With CreateObject("VBScript.RegExp")
-'        .IgnoreCase = True
-'        .Global = True
-'        '.Pattern = "^([a-zA-Z0-9\s]+(?:\s?[a-zA-Z0-9]*\s?)*\s?\([a-zA-Z0-9\*\.;,\s]*\))(\|[a-zA-Z0-9\s]+(?:\s?[a-zA-Z0-9]*\s?)*\s?\([a-zA-Z0-9\*\.;,\s]*\))*$"
-'        .Pattern = "^(.+)(\([a-zA-Z\*\.;,\s\-]*\))(\|(.+)(\([a-zA-Z\*\.;,\s\-]*\)))*$"
-'        If Not .test(arg1) Then
-'            Err.Raise 1002, , "フィルターが間違っています"
-'        End If
-'    End With
-    
-    GetOpenFilenameFileFilter_ = arg1
-End Property
-    
-Public Property Get GetOpenFilenameFileFilter() As String
-    DefaultDirectory = GetOpenFilenameFileFilter_
-End Property
-
+Public DialogFileFilter As String
+Public DialogTitle As String
 
 Private Sub Class_Initialize()
-    GetOpenFilenameFileFilter_ = "ファイル,*.*"
-    GetOpenFilenameTitle_ = "ファイルを選んでください"
+    DialogFileFilter = "Excel,*.xls*"
+    DialogTitle = "ファイルを選んでください。"
+    SheetNamesString_ = ""
 End Sub
 
 Private Sub Class_Terminate()
-    If Not WbOrig_ Is Nothing Then
-        WbOrig_.Close SaveChanges:=False
+    If Not Wb_ Is Nothing Then
+        Wb_.Close SaveChanges:=False
     End If
 End Sub
 
 Public Function getBook() As Workbook
-    If WbOrig_ Is Nothing Then
+    If Wb_ Is Nothing Then
         With CreateObject("Scripting.FileSystemObject")
-            If WbOrigAbsoluteFileName_ = "" Then
+            If AbsoluteFileName = "" Then
                 Call getAbsoluteFileName
-            ElseIf Not .FileExists(WbOrigAbsoluteFileName_) Then
-                GetOpenFilenameTitle_ = "指定されたファイルが見つかりませんでした:" & GetOpenFilenameTitle_
+            ElseIf Not .FileExists(AbsoluteFileName) Then
+                DialogTitle = DialogTitle & " 指定されたファイルが見つかりませんでした:" & AbsoluteFileName
                 Call getAbsoluteFileName
             End If
         End With
         
-        Set WbOrig_ = Workbooks.Open(Filename:=WbOrigAbsoluteFileName_, ReadOnly:=True)
+        Set Wb_ = Workbooks.Open(FileName:=AbsoluteFileName, ReadOnly:=True)
     End If
 
-    Set getBook = WbOrig_
+    Set getBook = Wb_
 
 End Function
 
@@ -110,101 +53,79 @@ Public Function getAbsoluteFileName() As String
     End If
     
     'ファイル名(フルパス)取得  / get filename(full path)
-    WbOrigAbsoluteFileName_ = Application.GetOpenFilename(fileFilter:=GetOpenFilenameFileFilter_, Title:=GetOpenFilenameTitle_)
+    AbsoluteFileName = Application.GetOpenFilename(fileFilter:=DialogFileFilter, Title:=DialogTitle)
     
     'キャンセルしたときは中止 / abort when cancel was pushed
-    If WbOrigAbsoluteFileName_ = "False" Then
-        WbOrigAbsoluteFileName_ = ""
+    If AbsoluteFileName = "False" Then
+        AbsoluteFileName = ""
         Err.Raise 1001, , "ファイルが選ばれませんでした。"
     End If
     
-'    ファイル名指定がある場合
-    If WbOrigFileName_ <> "" Then
+    'ファイル名指定がある場合
+    If FileName <> "" Then
         With CreateObject("Scripting.FileSystemObject")
-            If .GetFileName(WbOrigAbsoluteFileName_) <> WbOrigFileName_ Then
-              Err.Raise 1004, , "選択したファイルが指定されたファイル名と一致しません"
+            If .GetFileName(AbsoluteFileName) <> FileName Then
+                Err.Raise 1004, , "選択したファイルが指定されたファイル名と一致しません"
             End If
         End With
     End If
     
-    getAbsoluteFileName = WbOrigAbsoluteFileName_
+    getAbsoluteFileName = AbsoluteFileName
 
 End Function
 
 Public Function getSheet() As Worksheet
-'    If WsOrigSheetName_ = "" Then
-'        'シート名指定がないときはシート名を取得する(getSheetName関数内でファイルを開く処理もある)
-'        Call getSheetName
-'        Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
-'    Else
-'        'シート名指定があるときはブックを取得する
-'        Call getBook
-'
-'        On Error Resume Next
-'        Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
-'        On Error GoTo 0
-'
-'        'シートが取得できなかった時(シート名直指定でシートが存在しない場合)
-'        If WsOrig_ Is Nothing Then
-'            'シート名選択プロンプト表示か、例外を投げる
-'            Call getSheetName
-'            Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
-'            'Err.Raise 1011, , "シートが存在しません。:" & WsOrigSheetName_
-'        End If
-'    End If
-
     'シート名直指定あり
-    If WsOrigSheetName_ <> "" Then
+    If SheetName <> "" Then
         'シート名指定があるときはブックを取得する
         Call getBook
 
         On Error Resume Next
         'シートを取得してみる
-        Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
+        Set Ws_ = Wb_.Worksheets(SheetName)
         On Error GoTo 0
-    
-        'シート名直指定でシートが存在しない場合、例外を投げる場合はコメントを外す
-'        If WsOrig_ Is Nothing Then
-'            Err.Raise 1011, , "シートが存在しません。:" & WsOrigSheetName_
-'        End If
     End If
 
     'シート名指定がない/シート名直指定でシートが存在しない場合
-    If WsOrig_ Is Nothing Then
+    If Ws_ Is Nothing Then
+        If SheetName <> "" Then
+            SheetNamesString_ = """" & SheetName & """" & "シートは見つかりませんでした。" & vbCrLf & SheetNamesString_
+        End If
+    
         'シート名選択プロンプト表示
         Call getSheetName
-        Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
+        Set Ws_ = Wb_.Worksheets(SheetName)
     End If
 
-    Set getSheet = WsOrig_
+    Set getSheet = Ws_
 
 End Function
 
 Public Function getSheetName() As String
-    Dim wsString As String
+'    Dim wsString As String
     Dim i, res, errNum, loopExitNum As Long
     
     'シート名配列未取得の場合は取得する
-    If (Not WsOrigSheetNames_) = -1 Then
+    If (Not SheetNames_) = -1 Then
         Call getSheetNames
     End If
     
-    'シートが１枚のみの時はプロンプトを表示しないでそのまま返す
-    If UBound(WsOrigSheetNames_) = 0 Then
+    'シートが１枚のみの時はそのまま返す
+    If UBound(SheetNames_) = 0 Then
+        'シート名指定があり一致していないときは警告を表示する
+        If SheetName <> "" Then
+            If SheetNames_(0) <> SheetName Then
+                MsgBox """" & SheetName & """" & "シートは見つかりませんでした。シートが１枚のため" & """" & SheetNames_(0) & """" & "を選択します。"
+            End If
+        End If
         res = 0
     Else
-        wsString = ""
-        
-        For i = 0 To UBound(WsOrigSheetNames_)
-            wsString = wsString & i & ":" & WsOrigSheetNames_(i) & vbCrLf
-        Next i
-        
         '終了番号を取得(シート数が1~9の時:99, 10~99の時:999)
-        loopExitNum = (10 ^ (Int(Log(UBound(WsOrigSheetNames_)) / Log(10)) + 2)) - 1
+        loopExitNum = (10 ^ (Int(Log(UBound(SheetNames_)) / Log(10)) + 2)) - 1
         
         Do
             On Error Resume Next
-            res = CLng(InputBox(wsString, "選択するシート名の番号を入力してください。" & loopExitNum & "で終了します。"))
+            res = CLng(InputBox(SheetNamesString_, "選択するシート名の番号を入力してください。" & loopExitNum & "で終了します。"))
             'エラー処理を終わらせないとErr.Raiseできないのでエラー番号を取得
             errNum = Err.Number
             On Error GoTo 0
@@ -223,37 +144,38 @@ Public Function getSheetName() As String
                 Case Else
                     Err.Raise 9999, , "不明なエラー"
             End Select
-        Loop While res < 0 Or UBound(WsOrigSheetNames_) < res
+        Loop While res < 0 Or UBound(SheetNames_) < res
     End If
     
-    WsOrigSheetName_ = WsOrigSheetNames_(res)
+    SheetName = SheetNames_(res)
     
-    getSheetName = WsOrigSheetName_
+    getSheetName = SheetName
 
 End Function
 
 Public Function getSheetNames() As String()
     Dim i As Long
     
-    If WbOrig_ Is Nothing Then
+    If Wb_ Is Nothing Then
         Call getBook
     End If
     
-    ReDim WsOrigSheetNames_(WbOrig_.Worksheets.Count - 1)
+    ReDim SheetNames_(Wb_.Worksheets.Count - 1)
     
-    For i = 1 To WbOrig_.Worksheets.Count
-        WsOrigSheetNames_(i - 1) = WbOrig_.Worksheets(i).Name
+    For i = 1 To Wb_.Worksheets.Count
+        SheetNames_(i - 1) = Wb_.Worksheets(i).Name
+        SheetNamesString_ = SheetNamesString_ & (i - 1) & ":" & Wb_.Worksheets(i).Name & vbCrLf
     Next i
 
-    getSheetNames = WsOrigSheetNames_
+    getSheetNames = SheetNames_
 
 End Function
-
 
 'Err.Raise 1001, , "ファイルが選ばれませんでした。"
 'Err.Raise 1002, , "フィルターが間違っています"
 'Err.Raise 1003, , "ファイルが存在しません。"
 'Err.Raise 1004, , "選択したファイルが指定されたファイル名と一致しません"
-'Err.Raise 1011, , "シートが存在しません。:" & WsOrigSheetName_
+'Err.Raise 1011, , "シートが存在しません。:" & SheetName_
 'Err.Raise 1099, , "ユーザーによる中断"
 'Err.Raise 9999, , "不明なエラー"
+
