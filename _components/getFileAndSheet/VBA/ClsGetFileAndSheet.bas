@@ -1,4 +1,5 @@
 Option Explicit
+
 Private DefaultDirectory_ As String
 
 Private WbOrig_ As Workbook
@@ -11,7 +12,8 @@ Private WsOrigSheetNames_() As String
 
 Private GetOpenFilenameFileFilter_ As String
 Private GetOpenFilenameTitle_  As String
-    
+
+
 Public Property Let DefaultDirectory(arg1 As String)
     DefaultDirectory_ = arg1
 End Property
@@ -43,6 +45,14 @@ Public Property Get WbOrigFileName() As String
     DefaultDirectory = WbOrigFileName_
 End Property
 
+Public Property Let WsOrigSheetName(arg1 As String)
+    WsOrigSheetName_ = arg1
+End Property
+    
+Public Property Get WsOrigSheetName() As String
+    DefaultDirectory = WsOrigSheetName_
+End Property
+
 Public Property Let GetOpenFilenameFileFilter(arg1 As String)
 '    With CreateObject("VBScript.RegExp")
 '        .IgnoreCase = True
@@ -65,7 +75,6 @@ End Property
 Private Sub Class_Initialize()
     GetOpenFilenameFileFilter_ = "ファイル,*.*"
     GetOpenFilenameTitle_ = "ファイルを選んでください"
-
 End Sub
 
 Private Sub Class_Terminate()
@@ -91,7 +100,7 @@ Public Function getBook() As Workbook
     Set getBook = WbOrig_
 
 End Function
-    
+
 Public Function getAbsoluteFileName() As String
     'カレントディレクトリ変更  / change the current directory
     If DefaultDirectory <> "" Then
@@ -123,12 +132,47 @@ Public Function getAbsoluteFileName() As String
 End Function
 
 Public Function getSheet() As Worksheet
+'    If WsOrigSheetName_ = "" Then
+'        'シート名指定がないときはシート名を取得する(getSheetName関数内でファイルを開く処理もある)
+'        Call getSheetName
+'        Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
+'    Else
+'        'シート名指定があるときはブックを取得する
+'        Call getBook
+'
+'        On Error Resume Next
+'        Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
+'        On Error GoTo 0
+'
+'        'シートが取得できなかった時(シート名直指定でシートが存在しない場合)
+'        If WsOrig_ Is Nothing Then
+'            'シート名選択プロンプト表示か、例外を投げる
+'            Call getSheetName
+'            Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
+'            'Err.Raise 1011, , "シートが存在しません。:" & WsOrigSheetName_
+'        End If
+'    End If
 
-    If WsOrig_ Is Nothing Then
-        If WsOrigSheetName_ = "" Then
-            Call getSheetName
-        End If
+    'シート名直指定あり
+    If WsOrigSheetName_ <> "" Then
+        'シート名指定があるときはブックを取得する
+        Call getBook
+
+        On Error Resume Next
+        'シートを取得してみる
+        Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
+        On Error GoTo 0
     
+        'シート名直指定でシートが存在しない場合、例外を投げる場合はコメントを外す
+'        If WsOrig_ Is Nothing Then
+'            Err.Raise 1011, , "シートが存在しません。:" & WsOrigSheetName_
+'        End If
+    End If
+
+    'シート名指定がない/シート名直指定でシートが存在しない場合
+    If WsOrig_ Is Nothing Then
+        'シート名選択プロンプト表示
+        Call getSheetName
         Set WsOrig_ = WbOrig_.Worksheets(WsOrigSheetName_)
     End If
 
@@ -210,5 +254,6 @@ End Function
 'Err.Raise 1002, , "フィルターが間違っています"
 'Err.Raise 1003, , "ファイルが存在しません。"
 'Err.Raise 1004, , "選択したファイルが指定されたファイル名と一致しません"
+'Err.Raise 1011, , "シートが存在しません。:" & WsOrigSheetName_
 'Err.Raise 1099, , "ユーザーによる中断"
 'Err.Raise 9999, , "不明なエラー"
