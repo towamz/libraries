@@ -14,17 +14,30 @@ Private SheetNamesString_ As String
 Public DialogFileFilter As String
 Public DialogTitle As String
 
+Public IsCloseFileOnTerminate As Boolean    'クラス終了時にファイルを閉じるか
+
 Private Sub Class_Initialize()
     DialogFileFilter = "Excel,*.xls*"
     DialogTitle = "ファイルを選んでください。"
     SheetNamesString_ = ""
+    IsCloseFileOnTerminate = True   '既定でクラス終了時ファイルを閉じる
 End Sub
 
 Private Sub Class_Terminate()
-    If Not Wb_ Is Nothing Then
-        Wb_.Close SaveChanges:=False
+    'class終了時に閉じる指定がある場合は閉じる
+    If IsCloseFileOnTerminate Then
+        If Not Wb_ Is Nothing Then
+            Wb_.Close SaveChanges:=False
+        End If
     End If
 End Sub
+
+'すでに開いているファイルからシートを取得するためworkbookを引数にとる関数
+Public Sub setBook(arg1 As Workbook)
+    Set Wb_ = arg1
+    IsCloseFileOnTerminate = False  '既に開いているファイルの取得なのでclass終了時も閉じない
+End Sub
+
 
 Public Function getBook() As Workbook
     If Wb_ Is Nothing Then
