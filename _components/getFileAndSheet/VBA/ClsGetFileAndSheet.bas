@@ -128,7 +128,10 @@ Public Function getSheetName() As String
         'シート名指定があり一致していないときは警告を表示する
         If SheetName <> "" Then
             If SheetNames_(0) <> SheetName Then
-                MsgBox """" & SheetName & """" & "シートは見つかりませんでした。シートが１枚のため" & """" & SheetNames_(0) & """" & "を選択します。"
+                If MsgBox("""" & SheetName & """" & "シートは見つかりませんでした。" & vbCrLf & _
+                        "シートが１枚のため" & """" & SheetNames_(0) & """" & "を選択します。", vbOKCancel) = vbCancel Then
+                    Err.Raise 1099, , "ユーザーによる中断"
+                End If
             End If
         End If
         res = 0
