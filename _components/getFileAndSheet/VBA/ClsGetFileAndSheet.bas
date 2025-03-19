@@ -15,19 +15,43 @@ Public DialogFileFilter As String
 Public DialogTitle As String
 
 Public IsCloseFileOnTerminate As Boolean    'クラス終了時にファイルを閉じるか
+Public IsSaveFileOnTerminate As SaveFileOption    'ファイルを保存するか
+
+Enum SaveFileOption
+    Yes
+    No
+    Ask
+End Enum
 
 Private Sub Class_Initialize()
     DialogFileFilter = "Excel,*.xls*"
     DialogTitle = "ファイルを選んでください。"
     SheetNamesString_ = ""
     IsCloseFileOnTerminate = True   '既定でクラス終了時ファイルを閉じる
+    IsSaveFileOnTerminate = No '既定で読み取り専用で開く
 End Sub
 
 Private Sub Class_Terminate()
     'class終了時に閉じる指定がある場合は閉じる
     If IsCloseFileOnTerminate Then
         If Not Wb_ Is Nothing Then
-            Wb_.Close SaveChanges:=False
+            Select Case IsSaveFileOnTerminate
+                '保存オプションでYesの時は、アラートを表示しないで保存
+                Case SaveFileOption.Yes
+                    Application.DisplayAlerts = False
+                    Wb_.Close SaveChanges:=True
+                    Application.DisplayAlerts = True
+                '保存オプションでnoの時は、保存しない
+                Case SaveFileOption.No
+                    Wb_.Close SaveChanges:=False
+                '保存オプションでAskの時は、msgboxを表示
+                Case SaveFileOption.Ask
+                    If MsgBox("ファイルの変更を保存しますか", vbYesNo) = vbYes Then
+                        Wb_.Close SaveChanges:=True
+                    Else
+                        Wb_.Close SaveChanges:=False
+                    End If
+            End Select
         End If
     End If
 End Sub
@@ -38,7 +62,9 @@ Public Sub setBook(arg1 As Workbook)
     IsCloseFileOnTerminate = False  '既に開いているファイルの取得なのでclass終了時も閉じない
 End Sub
 
-
+'ブックオブジェクトを取得
+'ブックが開いていないときはブックを開く
+'ファイルのフルパスが設定されていない/存在しないフルパスの時は、getAbsoluteFileName関数を呼び出す
 Public Function getBook() As Workbook
     If Wb_ Is Nothing Then
         With CreateObject("Scripting.FileSystemObject")
@@ -50,13 +76,21 @@ Public Function getBook() As Workbook
             End If
         End With
         
-        Set Wb_ = Workbooks.Open(FileName:=AbsoluteFileName, ReadOnly:=True)
+        Select Case IsSaveFileOnTerminate
+            'ファイル保存オプションで保存しないの時は、読み取り専用で開く
+            Case SaveFileOption.No
+                Set Wb_ = Workbooks.Open(FileName:=AbsoluteFileName, ReadOnly:=True)
+            'ファイル保存オプションで保存する/閉じるときに確認の時は、通常モードで開く
+            Case Else
+                Set Wb_ = Workbooks.Open(FileName:=AbsoluteFileName, ReadOnly:=False)
+        End Select
     End If
 
     Set getBook = Wb_
 
 End Function
 
+'ファイルを開くダイアログを表示してファイルのフルパスを取得する
 Public Function getAbsoluteFileName() As String
     'カレントディレクトリ変更  / change the current directory
     If DefaultDirectory <> "" Then
@@ -114,6 +148,8 @@ Public Function getSheet() As Worksheet
 
 End Function
 
+'シートを1枚選択
+'戻り値:シート名(String)
 Public Function getSheetName() As String
 '    Dim wsString As String
     Dim i, res, errNum, loopExitNum As Long
@@ -169,6 +205,8 @@ Public Function getSheetName() As String
 
 End Function
 
+'ブック内のすべてのシート名を取得(配列と文字列、文字列はシート選択プロンプト表示用)
+'戻り値は配列
 Public Function getSheetNames() As String()
     Dim i As Long
     
