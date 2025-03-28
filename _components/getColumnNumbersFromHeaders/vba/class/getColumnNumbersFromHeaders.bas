@@ -12,7 +12,7 @@ Private TargetHeaders_() As String
 
 '列文字列/列番号/見出し文字列を列番号に変換した結果を格納
 Private ResultColumnNumbers_() As Long
-Private AllowDuplicateHeaders_  As Boolean
+Private IsAllowDuplicateHeaders_  As Boolean
 
 
 Public Property Set Ws(arg1 As Worksheet)
@@ -22,7 +22,7 @@ End Property
 Public Property Let TargetHeadersRowNumber(arg1 As Long)
     '引数が行番号として有効か判定する / judge the argument is valid as a row number
     On Error Resume Next
-    Debug.Print Rows(arg1).Address
+    Debug.Print "見出し行番号有効性確認:" & Rows(arg1).Address
     
     If Err.Number <> 0 Then
         Debug.Print Err.Number & Err.Description
@@ -39,18 +39,25 @@ Public Property Get TargetHeadersRowNumber() As Long
 End Property
 
 
+
 '列文字(A,AAなど)を指定 / specify column letter
 Public Property Let TargetColumnLetter(arg1 As String)
-    If (Not TargetHeaders_) = -1 Then
-        ReDim TargetHeaders_(1, 0)
-    Else
-        ReDim Preserve TargetHeaders_(1, UBound(TargetHeaders_, 2) + 1)
-    End If
+    Dim i As Long
+    
+    Debug.Print "列記号:" & arg1
     
     '列(英字)を列(数値)に変更 / get row number from row alphabet
-    TargetHeaders_(0, UBound(TargetHeaders_, 2)) = Ws_.Columns(arg1).Column
-    TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 0
-
+    For i = Ws_.Columns(arg1).Column To Ws_.Columns(arg1).Columns.Count + Ws_.Columns(arg1).Column - 1
+        If (Not TargetHeaders_) = -1 Then
+            ReDim TargetHeaders_(1, 0)
+        Else
+            ReDim Preserve TargetHeaders_(1, UBound(TargetHeaders_, 2) + 1)
+        End If
+        
+        Debug.Print "->列番号:" & i
+        TargetHeaders_(0, UBound(TargetHeaders_, 2)) = i
+        TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 0
+    Next
 End Property
 
 '列数字(1,2など)を指定 / specify column number
@@ -61,11 +68,12 @@ Public Property Let TargetColumnNumber(arg1 As Long)
         ReDim Preserve TargetHeaders_(1, UBound(TargetHeaders_, 2) + 1)
     End If
     
+    Debug.Print "列番号:" & arg1
     TargetHeaders_(0, UBound(TargetHeaders_, 2)) = arg1
     TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 0
 End Property
 
-'見出し文字列を指定 / cpecify header string
+
 Public Property Let TargetHeader(arg1 As String)
     If (Not TargetHeaders_) = -1 Then
         ReDim TargetHeaders_(1, 0)
@@ -79,11 +87,11 @@ End Property
 
 
 Public Property Let AllowDuplicateHeaders(arg1 As Boolean)
-    AllowDuplicateHeaders_ = arg1
+    IsAllowDuplicateHeaders_ = arg1
 End Property
 
 Public Property Get AllowDuplicateHeaders() As Boolean
-    AllowDuplicateHeaders = AllowDuplicateHeaders_
+    AllowDuplicateHeaders = IsAllowDuplicateHeaders_
 End Property
 
 
@@ -92,13 +100,18 @@ Private Sub Class_Initialize()
     '見出し行(既定値:1) / headerRow (default is 1)
     TargetHeadersRowNumber_ = 1
     '同じ見出し文字列を許可するか(既定値:false)
-    AllowDuplicateHeaders_ = False
+    IsAllowDuplicateHeaders_ = False
 End Sub
 
 Public Function getColumnNumberFromHeader() As Long()
     Dim testRange As Range
     Dim firstAddress As String
+
     Dim i As Long
+    
+    If (Not TargetHeaders_) = -1 Then
+        Err.Raise 1004, , "有効な検索対象列が設定されていません。"
+    End If
     
     For i = LBound(TargetHeaders_, 2) To UBound(TargetHeaders_, 2)
         '見出し文字列で指定されている場合は検索する
@@ -129,7 +142,7 @@ Public Function getColumnNumberFromHeader() As Long()
                 Set testRange = Ws_.Rows(TargetHeadersRowNumber_).FindNext(testRange)
 
                 'おなじ見出し文字列を許可していない場合で２つ以上見つかった場合は例外を投げる
-                If Not AllowDuplicateHeaders_ Then
+                If Not IsAllowDuplicateHeaders_ Then
                     If firstAddress <> testRange.Address Then
                         Err.Raise 1021, , "指定されたタイトル文字列が2つ以上あります"
                     End If
