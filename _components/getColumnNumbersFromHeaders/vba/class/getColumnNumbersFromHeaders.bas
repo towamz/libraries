@@ -39,7 +39,6 @@ Public Property Get TargetHeadersRowNumber() As Long
 End Property
 
 
-
 '列文字(A,AAなど)を指定 / specify column letter
 Public Property Let TargetColumnLetter(arg1 As String)
     Dim i As Long
@@ -81,19 +80,19 @@ Public Property Let TargetHeader(arg1 As String)
         ReDim Preserve TargetHeaders_(1, UBound(TargetHeaders_, 2) + 1)
     End If
     
+    Debug.Print "見出し文字列:" & arg1
     TargetHeaders_(0, UBound(TargetHeaders_, 2)) = arg1
     TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 1
 End Property
 
 
-Public Property Let AllowDuplicateHeaders(arg1 As Boolean)
+Public Property Let IsAllowDuplicateHeaders(arg1 As Boolean)
     IsAllowDuplicateHeaders_ = arg1
 End Property
 
-Public Property Get AllowDuplicateHeaders() As Boolean
+Public Property Get IsAllowDuplicateHeaders() As Boolean
     AllowDuplicateHeaders = IsAllowDuplicateHeaders_
 End Property
-
 
 
 Private Sub Class_Initialize()
@@ -147,7 +146,6 @@ Public Function getColumnNumberFromHeader() As Long()
                         Err.Raise 1021, , "指定されたタイトル文字列が2つ以上あります"
                     End If
                 End If
-
 
                 Do Until firstAddress = testRange.Address
                     '2回目以降の列番号を格納
