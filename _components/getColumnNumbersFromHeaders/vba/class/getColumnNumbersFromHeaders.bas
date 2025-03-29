@@ -102,7 +102,7 @@ Private Sub Class_Initialize()
     IsAllowDuplicateHeaders_ = False
 End Sub
 
-Public Function getColumnNumberFromHeader() As Long()
+Public Function getColumnNumbersFromHeaders() As Long()
     Dim testRange As Range
     Dim firstAddress As String
 
