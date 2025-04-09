@@ -13,6 +13,7 @@ Private AbsolutePdfName_ As String
 
 Private IsAlertForDeleteSheet_ As Boolean
 Private IsAlertForOverwritePdfFile_ As Boolean
+Private IsAlertForCreateFolder_ As Boolean
 
 Public Property Let TargetDirectory(arg1 As String)
     TargetDirectory_ = arg1
@@ -78,6 +79,16 @@ Public Property Get IsAlertForOverwritePdfFile() As Boolean
 End Property
 
 
+Public Property Let IsAlertForCreateFolder(arg1 As Boolean)
+    IsAlertForCreateFolder_ = arg1
+End Property
+
+Public Property Get IsAlertForCreateFolder() As Boolean
+    IsAlertForCreateFolder_ = IsAlertForOverwritePdfFile_
+End Property
+
+
+
 Private Sub Class_Initialize()
     Set FSO = CreateObject("Scripting.FileSystemObject")
     Set Wb_ = ThisWorkbook
@@ -100,7 +111,13 @@ Public Sub savePDF()
 
     ReDim Preserve WsNames_(WsNamesIndex_)
     
+    'フォルダ確認
     If Not FSO.FolderExists(TargetDirectory_) Then
+        If IsAlertForCreateFolder_ Then
+            If MsgBox("指定フォルダがありません。フォルダを作成しますか", vbYesNo + vbQuestion + vbDefaultButton2) = vbNo Then
+                Exit Sub
+            End If
+        End If
         FSO.CreateFolder TargetDirectory_
     End If
     
