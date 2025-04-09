@@ -84,7 +84,7 @@ Public Property Let IsAlertForCreateFolder(arg1 As Boolean)
 End Property
 
 Public Property Get IsAlertForCreateFolder() As Boolean
-    IsAlertForCreateFolder_ = IsAlertForOverwritePdfFile_
+    IsAlertForCreateFolder = IsAlertForCreateFolder_
 End Property
 
 
