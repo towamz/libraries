@@ -1,0 +1,27 @@
+Public Sub wsNameColumns(wsName As String, ParamArray targetColumns() As Variant)
+    Dim currentDic As Object
+    Dim errNum As Long
+    Dim i As Long
+    
+    If Not WsNames_.Exists(wsName) Then
+        ReDim Preserve TargetColumns_(WsNames_.Count)
+        Set TargetColumns_(UBound(TargetColumns_)) = CreateObject("Scripting.Dictionary")
+        WsNames_.Add wsName, TargetColumns_(UBound(TargetColumns_))
+    End If
+    
+    Set currentDic = WsNames_(wsName)
+
+    For i = LBound(targetColumns) To UBound(targetColumns)
+        On Error Resume Next
+        Debug.Print Range(targetColumns(i) & "1").Address
+        errNum = Err.Number
+        On Error GoTo 0
+        
+        If errNum = 0 Then
+            If Not currentDic.Exists(targetColumns(i)) Then
+                currentDic.Add targetColumns(i), 0
+            End If
+        End If
+    Next i
+
+End Sub
