@@ -1,0 +1,23 @@
+Private dynamicArray() As String
+Private dynamicArrayIndex As Long
+
+Public Sub appendDynamicArrayElement(arg1 as Variant) 
+    dynamicArrayIndex = dynamicArrayIndex + 1
+    If dynamicArrayIndex > UBound(dynamicArray) Then
+        ReDim Preserve dynamicArray(UBound(dynamicArray) * 2)
+    End If
+    dynamicArray(dynamicArrayIndex) = arg1
+End Sub
+
+Private Sub Class_Initialize()
+    ReDim Preserve dynamicArray(8)
+    dynamicArrayIndex = -1
+End Sub
+
+public sub adjustDynamicArrayIndex() 
+    If dynamicArrayIndex > -1 Then
+        ReDim Preserve dynamicArray(dynamicArrayIndex)
+    Else
+        Erase dynamicArray
+    End If
+End Sub
