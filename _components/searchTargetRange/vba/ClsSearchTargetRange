@@ -1,0 +1,83 @@
+Private FstRg_ As Range
+Private SrcType_ As Long
+
+Public Enum EnumSrcType
+    Number
+    Text
+End Enum
+
+
+Public Property Let SearchType(arg1 As EnumSrcType)
+    SrcType_ = arg1
+End Property
+
+
+Private Sub Class_Initialize()
+    SrcType_ = EnumSrcType.Number
+End Sub
+
+
+Public Function searchTargetRange(FirstRange As Variant) As Range
+    Dim rg_src As Range
+
+    '引数がrangeオブジェクト
+    If TypeName(FstRg) = "Range" Then
+        Set FstRg_ = FstRg
+    '引数が文字列
+    ElseIf VarType(FstRg) = vbString Then
+        Set FstRg_ = Range(FstRg)
+    End If
+
+
+    '最初のセルはループに入る前にチェックする
+    If isTargetRange(FstRg_) Then
+        Set searchTargetRange = FstRg_
+        Exit Function
+    End If
+    
+    Set rg_src = FstRg_
+    
+    Do
+        DoEvents
+        '次のセルが空白の時endで検索する
+        If rg_src.Offset(1, 0).Value = "" Then
+            Set rg_src = rg_src.End(xlDown)
+        '次のセルが空白でない時はひとつずつ確認する
+        Else
+            j = 0
+            Do
+                DoEvents
+                j = j + 1
+            '数値のセルが見つかるか次のセルが空白の時はループを中断する
+            Loop Until isTargetRange(rg_src.Offset(j, 0)) Or rg_src.Offset(j + 1, 0).Value = ""
+            Set rg_src = rg_src.Offset(j, 0)
+        End If
+    
+        'rg_src.Activate
+    Loop Until isTargetRange(rg_src) Or rg_src.Row >= Rows.Count
+
+    Set searchTargetRange = rg_src
+
+End Function
+
+
+Private Function isTargetRange(rg As Range) As Boolean
+
+    Select Case SrcType_
+        Case EnumSrcType.Number
+            'isnumericは空白でもtrue返すため空白チェック必要
+            If rg.Value = "" Then
+                isTargetRange = False
+                Exit Function
+            End If
+        
+            isTargetRange = IsNumeric(rg.Value)
+    
+        Case EnumSrcType.Text
+            isTargetRange = (VarType(rg.Value) = vbString)
+    
+    End Select
+
+End Function
+
+
