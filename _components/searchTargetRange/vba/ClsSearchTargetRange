@@ -1,5 +1,8 @@
+Option Explicit
+
 Private FstRg_ As Range
-Private SrcType_ As Long
+Private SrcType_ As EnumSrcType
+Private SrcDir_ As XlDirection
 
 Public Enum EnumSrcType
     Number
@@ -7,26 +10,52 @@ Public Enum EnumSrcType
 End Enum
 
 
+
 Public Property Let SearchType(arg1 As EnumSrcType)
     SrcType_ = arg1
 End Property
 
+Public Property Let SearchDirection(arg1 As XlDirection)
+    SrcDir_ = arg1
+End Property
 
 Private Sub Class_Initialize()
     SrcType_ = EnumSrcType.Number
+    SrcDir_ = xlDown
 End Sub
-
 
 Public Function searchTargetRange(FirstRange As Variant) As Range
     Dim rg_src As Range
+    Dim rowOffset As Long
+    Dim colOffset As Long
+    Dim rowDir As Long
+    Dim colDir As Long
+
 
     '引数がrangeオブジェクト
-    If TypeName(FstRg) = "Range" Then
-        Set FstRg_ = FstRg
+    If TypeName(FirstRange) = "Range" Then
+        Set FstRg_ = FirstRange
     '引数が文字列
-    ElseIf VarType(FstRg) = vbString Then
-        Set FstRg_ = Range(FstRg)
+    ElseIf VarType(FirstRange) = vbString Then
+        Set FstRg_ = Range(FirstRange)
+    Else
+        Err.Raise 1099, , "不明なエラーです"
     End If
+
+    Select Case SrcDir_
+        Case XlDirection.xlDown
+            rowDir = 1
+            colDir = 0
+        Case XlDirection.xlToRight
+            colDir = 1
+            rowDir = 0
+        Case XlDirection.xlUp
+            rowDir = -1
+            colDir = 0
+        Case XlDirection.xlToLeft
+            colDir = -1
+            rowDir = 0
+    End Select
 
 
     '最初のセルはループに入る前にチェックする
@@ -40,26 +69,27 @@ Public Function searchTargetRange(FirstRange As Variant) As Range
     Do
         DoEvents
         '次のセルが空白の時endで検索する
-        If rg_src.Offset(1, 0).Value = "" Then
-            Set rg_src = rg_src.End(xlDown)
+        If rg_src.Offset(rowDir, colDir).Value = "" Then
+            Set rg_src = rg_src.End(SrcDir_)
         '次のセルが空白でない時はひとつずつ確認する
         Else
-            j = 0
+            rowOffset = 0
+            colOffset = 0
             Do
                 DoEvents
-                j = j + 1
+                rowOffset = rowOffset + rowDir
+                colOffset = colOffset + colDir
             '数値のセルが見つかるか次のセルが空白の時はループを中断する
-            Loop Until isTargetRange(rg_src.Offset(j, 0)) Or rg_src.Offset(j + 1, 0).Value = ""
-            Set rg_src = rg_src.Offset(j, 0)
+            Loop Until isTargetRange(rg_src.Offset(rowOffset, colOffset)) Or rg_src.Offset(rowOffset + rowDir, colOffset + colDir).Value = ""
+            Set rg_src = rg_src.Offset(rowOffset, colOffset)
         End If
     
         'rg_src.Activate
-    Loop Until isTargetRange(rg_src) Or rg_src.Row >= Rows.Count
+    Loop Until isTargetRange(rg_src)
 
     Set searchTargetRange = rg_src
 
 End Function
-
 
 Private Function isTargetRange(rg As Range) As Boolean
 
@@ -68,15 +98,40 @@ Private Function isTargetRange(rg As Range) As Boolean
             'isnumericは空白でもtrue返すため空白チェック必要
             If rg.Value = "" Then
                 isTargetRange = False
-                Exit Function
+            Else
+                isTargetRange = IsNumeric(rg.Value)
             End If
-        
-            isTargetRange = IsNumeric(rg.Value)
     
         Case EnumSrcType.Text
             isTargetRange = (VarType(rg.Value) = vbString)
     
     End Select
+    
+    '上記の判定でfalseかつ各最終行列の場合は例外を投げる
+    If Not isTargetRange Then
+        Select Case SrcDir_
+            '下方向→行番号:[最大]
+            Case XlDirection.xlDown
+                If rg.Row >= Rows.Count Then
+                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
+                End If
+            '右方向→列番号:[最大]
+            Case XlDirection.xlToRight
+                If rg.Column >= Columns.Count Then
+                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
+                End If
+            '上方向→行番号:[1]
+            Case XlDirection.xlUp
+                If rg.Row <= 1 Then
+                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
+                End If
+            '左方向→列番号:[1]
+            Case XlDirection.xlToLeft
+                If rg.Column <= 1 Then
+                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
+                End If
+        End Select
+    End If
 
 End Function
 
