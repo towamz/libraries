@@ -36,9 +36,10 @@ Public Property Let SearchDirection(arg1 As XlDirection)
 End Property
 
 Private Sub Class_Initialize()
-    SrcType_ = EnumSrcType.Number
-    SrcDir_ = xlDown
+    SearchType = Number
+    SearchDirection = xlDown
 End Sub
+
 
 Public Function searchTargetRange(FirstRange As Variant) As Range
     Dim rg_src As Range
@@ -46,18 +47,8 @@ Public Function searchTargetRange(FirstRange As Variant) As Range
     Dim colOffset As Long
 
 
-    '引数がrangeオブジェクト
-    If TypeName(FirstRange) = "Range" Then
-        Set FstRg_ = FirstRange
-    '引数が文字列
-    ElseIf VarType(FirstRange) = vbString Then
-        Set FstRg_ = Range(FirstRange)
-    Else
-        Err.Raise 1099, , "不明なエラーです"
-    End If
-
     '最初のセルを変数に格納する
-    Set rg_src = FstRg_
+    Set rg_src = setFirstRange(FirstRange)
     
     Do
         DoEvents
@@ -85,13 +76,14 @@ Public Function searchTargetRange(FirstRange As Variant) As Range
                     Set searchTargetRange = rg_src.Offset(rowOffset, colOffset)
                     Exit Function
                 '現在のセルが最終のときはNothingを返す
-                ElseIf isLastCell(rg_src.Offset(rowOffset + RowDir_, colOffset + ColDir_)) Then
+                ElseIf isLastCell(rg_src.Offset(rowOffset, colOffset)) Then
                     Set searchTargetRange = Nothing
                     Exit Function
                 End If
             
             '次のセルが空白の時は次のループにいく
             Loop Until isNextCellBlank(rg_src.Offset(rowOffset, colOffset))
+            Set rg_src = rg_src.Offset(rowOffset, colOffset)
         
         '次のセルが空白の時は次のループにいく
 '        Else
@@ -100,6 +92,20 @@ Public Function searchTargetRange(FirstRange As Variant) As Range
         '次のセルをendで取得する
         Set rg_src = rg_src.End(SrcDir_)
     Loop
+
+End Function
+
+
+Private Function setFirstRange(FirstRange As Variant) As Range
+    '引数がrangeオブジェクト
+    If TypeName(FirstRange) = "Range" Then
+        Set setFirstRange = FirstRange
+    '引数が文字列
+    ElseIf VarType(FirstRange) = vbString Then
+        Set setFirstRange = Range(FirstRange)
+    Else
+        Err.Raise 1099, , "不明なエラーです"
+    End If
 
 End Function
 
