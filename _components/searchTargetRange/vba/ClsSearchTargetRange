@@ -43,17 +43,11 @@ End Sub
 
 Public Function searchTargetRange(FirstRange As Variant) As Range
     Dim rg_src As Range
-    Dim rowOffset As Long
-    Dim colOffset As Long
-
-
-    '最初のセルを変数に格納する
     Set rg_src = setFirstRange(FirstRange)
-    
+
     Do
         DoEvents
-        
-        '現在のセルが該当セルの場合、そのセルを返す
+        '現在のセルが該当セルの場合そのセルを返す
         If isTargetRange(rg_src) Then
             Set searchTargetRange = rg_src
             Exit Function
@@ -61,36 +55,16 @@ Public Function searchTargetRange(FirstRange As Variant) As Range
         ElseIf isLastCell(rg_src) Then
             Set searchTargetRange = Nothing
             Exit Function
-        '次のセルが空白でない時はひとつずつ確認する
-        ElseIf Not isNextCellBlank(rg_src) Then
-            rowOffset = 0
-            colOffset = 0
-            Do
-                DoEvents
-                '次のセルの参照に移る
-                rowOffset = rowOffset + RowDir_
-                colOffset = colOffset + ColDir_
-            
-                '現在のセルが該当セルの場合
-                If isTargetRange(rg_src.Offset(rowOffset, colOffset)) Then
-                    Set searchTargetRange = rg_src.Offset(rowOffset, colOffset)
-                    Exit Function
-                '現在のセルが最終のときはNothingを返す
-                ElseIf isLastCell(rg_src.Offset(rowOffset, colOffset)) Then
-                    Set searchTargetRange = Nothing
-                    Exit Function
-                End If
-            
-            '次のセルが空白の時は次のループにいく
-            Loop Until isNextCellBlank(rg_src.Offset(rowOffset, colOffset))
-            Set rg_src = rg_src.Offset(rowOffset, colOffset)
-        
-        '次のセルが空白の時は次のループにいく
-'        Else
         End If
         
-        '次のセルをendで取得する
-        Set rg_src = rg_src.End(SrcDir_)
+        ' 次のセルが空白の時はendで検索
+        If isNextCellBlank(rg_src) Then
+            Set rg_src = rg_src.End(SrcDir_)
+        ' 次のセルが空白以外の時は隣のセル
+        Else
+            Set rg_src = rg_src.Offset(RowDir_, ColDir_)
+        End If
+
     Loop
 
 End Function
