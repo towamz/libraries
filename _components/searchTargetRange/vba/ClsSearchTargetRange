@@ -3,13 +3,13 @@ Option Explicit
 Private FstRg_ As Range
 Private SrcType_ As EnumSrcType
 Private SrcDir_ As XlDirection
+Private RowDir_ As Long
+Private ColDir_ As Long
 
 Public Enum EnumSrcType
     Number
     Text
 End Enum
-
-
 
 Public Property Let SearchType(arg1 As EnumSrcType)
     SrcType_ = arg1
@@ -17,6 +17,22 @@ End Property
 
 Public Property Let SearchDirection(arg1 As XlDirection)
     SrcDir_ = arg1
+
+    Select Case SrcDir_
+        Case XlDirection.xlDown
+            RowDir_ = 1
+            ColDir_ = 0
+        Case XlDirection.xlToRight
+            RowDir_ = 0
+            ColDir_ = 1
+        Case XlDirection.xlUp
+            RowDir_ = -1
+            ColDir_ = 0
+        Case XlDirection.xlToLeft
+            RowDir_ = 0
+            ColDir_ = -1
+    End Select
+
 End Property
 
 Private Sub Class_Initialize()
@@ -28,8 +44,6 @@ Public Function searchTargetRange(FirstRange As Variant) As Range
     Dim rg_src As Range
     Dim rowOffset As Long
     Dim colOffset As Long
-    Dim rowDir As Long
-    Dim colDir As Long
 
 
     '引数がrangeオブジェクト
@@ -42,57 +56,95 @@ Public Function searchTargetRange(FirstRange As Variant) As Range
         Err.Raise 1099, , "不明なエラーです"
     End If
 
-    Select Case SrcDir_
-        Case XlDirection.xlDown
-            rowDir = 1
-            colDir = 0
-        Case XlDirection.xlToRight
-            colDir = 1
-            rowDir = 0
-        Case XlDirection.xlUp
-            rowDir = -1
-            colDir = 0
-        Case XlDirection.xlToLeft
-            colDir = -1
-            rowDir = 0
-    End Select
-
-
-    '最初のセルはループに入る前にチェックする
-    If isTargetRange(FstRg_) Then
-        Set searchTargetRange = FstRg_
-        Exit Function
-    End If
-    
+    '最初のセルを変数に格納する
     Set rg_src = FstRg_
     
     Do
         DoEvents
-        '次のセルが空白の時endで検索する
-        If rg_src.Offset(rowDir, colDir).Value = "" Then
-            Set rg_src = rg_src.End(SrcDir_)
+        
+        '現在のセルが該当セルの場合、そのセルを返す
+        If isTargetRange(rg_src) Then
+            Set searchTargetRange = rg_src
+            Exit Function
+        '現在のセルが最終のときはNothingを返す
+        ElseIf isLastCell(rg_src) Then
+            Set searchTargetRange = Nothing
+            Exit Function
         '次のセルが空白でない時はひとつずつ確認する
-        Else
+        ElseIf Not isNextCellBlank(rg_src) Then
             rowOffset = 0
             colOffset = 0
             Do
                 DoEvents
-                rowOffset = rowOffset + rowDir
-                colOffset = colOffset + colDir
-            '数値のセルが見つかるか次のセルが空白の時はループを中断する
-            Loop Until isTargetRange(rg_src.Offset(rowOffset, colOffset)) Or rg_src.Offset(rowOffset + rowDir, colOffset + colDir).Value = ""
-            Set rg_src = rg_src.Offset(rowOffset, colOffset)
+                '次のセルの参照に移る
+                rowOffset = rowOffset + RowDir_
+                colOffset = colOffset + ColDir_
+            
+                '現在のセルが該当セルの場合
+                If isTargetRange(rg_src.Offset(rowOffset, colOffset)) Then
+                    Set searchTargetRange = rg_src.Offset(rowOffset, colOffset)
+                    Exit Function
+                '現在のセルが最終のときはNothingを返す
+                ElseIf isLastCell(rg_src.Offset(rowOffset + RowDir_, colOffset + ColDir_)) Then
+                    Set searchTargetRange = Nothing
+                    Exit Function
+                End If
+            
+            '次のセルが空白の時は次のループにいく
+            Loop Until isNextCellBlank(rg_src.Offset(rowOffset, colOffset))
+        
+        '次のセルが空白の時は次のループにいく
+'        Else
         End If
-    
-        'rg_src.Activate
-    Loop Until isTargetRange(rg_src)
-
-    Set searchTargetRange = rg_src
+        
+        '次のセルをendで取得する
+        Set rg_src = rg_src.End(SrcDir_)
+    Loop
 
 End Function
 
-Private Function isTargetRange(rg As Range) As Boolean
 
+Private Function isNextCellBlank(rg As Range) As Boolean
+    '現在のセルが最終の場合はoffset実行でエラー発生するのでfalseを返す
+    If isLastCell(rg) Then
+        isNextCellBlank = False
+    ElseIf rg.Offset(RowDir_, ColDir_).Value = "" Then
+        isNextCellBlank = True
+    Else
+        isNextCellBlank = False
+    End If
+End Function
+
+
+Private Function isLastCell(rg As Range) As Boolean
+    isLastCell = False
+    
+    Select Case SrcDir_
+        '下方向→行番号:[最大]
+        Case XlDirection.xlDown
+            If rg.Row >= Rows.Count Then
+                isLastCell = True
+            End If
+        '右方向→列番号:[最大]
+        Case XlDirection.xlToRight
+            If rg.Column >= Columns.Count Then
+                isLastCell = True
+            End If
+        '上方向→行番号:[1]
+        Case XlDirection.xlUp
+            If rg.Row <= 1 Then
+                isLastCell = True
+            End If
+        '左方向→列番号:[1]
+        Case XlDirection.xlToLeft
+            If rg.Column <= 1 Then
+                isLastCell = True
+            End If
+    End Select
+End Function
+
+
+Private Function isTargetRange(rg As Range) As Boolean
     Select Case SrcType_
         Case EnumSrcType.Number
             'isnumericは空白でもtrue返すため空白チェック必要
@@ -104,35 +156,6 @@ Private Function isTargetRange(rg As Range) As Boolean
     
         Case EnumSrcType.Text
             isTargetRange = (VarType(rg.Value) = vbString)
-    
     End Select
-    
-    '上記の判定でfalseかつ各最終行列の場合は例外を投げる
-    If Not isTargetRange Then
-        Select Case SrcDir_
-            '下方向→行番号:[最大]
-            Case XlDirection.xlDown
-                If rg.Row >= Rows.Count Then
-                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
-                End If
-            '右方向→列番号:[最大]
-            Case XlDirection.xlToRight
-                If rg.Column >= Columns.Count Then
-                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
-                End If
-            '上方向→行番号:[1]
-            Case XlDirection.xlUp
-                If rg.Row <= 1 Then
-                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
-                End If
-            '左方向→列番号:[1]
-            Case XlDirection.xlToLeft
-                If rg.Column <= 1 Then
-                    Err.Raise 1001, , "該当のセルが見つかりませんでした"
-                End If
-        End Select
-    End If
-
 End Function
-
 
