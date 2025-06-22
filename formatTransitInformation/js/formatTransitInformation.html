@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>整形済み運行時刻情報</title>
+</head>
+<body>
+
+  <h2>整形済み運行時刻情報</h2>
+
+  <textarea id="textInput" rows="10" cols="60" placeholder="Yahoo路線情報の結果を貼り付け"></textarea>
+  <br>
+  <button onclick="showMatchingLines()">整形</button>
+  <button onclick="copyToClipboard()">コピー</button>
+
+  <br><br>
+  <textarea id="outputArea" rows="10" cols="60" readonly></textarea>
+
+  <script>
+    function showMatchingLines() {
+      const input = document.getElementById("textInput").value;
+      const lines = input.split("\n");
+
+      const regex1 = /^\d{2}:\d{2}$/;
+      const regex2 = /^(\d{2}):(\d{2})着(\d{2}):(\d{2})発/;
+      // const regex3 = /\t(.*?)(地図|出口|時刻表)$/;
+      const regex3 = /\t(.*?)(?=地図|出口|時刻表)(地図|出口|時刻表)$/
+
+      let formatted = "";
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (regex1.test(line)) {
+          i++
+          const nextLine = lines[i].trim();
+
+          const timeStr = line.replace(":", "");
+          const station = getStation(nextLine)
+
+          formatted += timeStr + station + "\n";
+
+        }else if (regex2.test(line)) {
+          const matchAry = line.match(regex2)
+          const h1Str = matchAry[1]; // "09" を保持
+          const m1Str = matchAry[2]; // "05"
+          const h2Str = matchAry[3]; // "09"
+          const m2Str = matchAry[4]; // "06"
+
+          const h1 = parseInt(matchAry[1], 10); // 18
+          const m1 = parseInt(matchAry[2], 10); // 44
+          const h2 = parseInt(matchAry[3], 10); // 18
+          const m2 = parseInt(matchAry[4], 10); // 46
+
+          const timeStr1 = `${h1Str}${m1Str}`;
+          let timeStr2 = ""
+          if (h1 + 1 == h2 && m1 < m2) {
+            timeStr2 = `${h2Str}${m2Str}`;
+          }else {
+            timeStr2 = `${m2Str}`;
+          }
+
+          const station = getStation(line)
+
+          formatted += timeStr1 + timeStr2 + station + "\n";
+          // formatted += timeStr1 + timeStr2 + "\n";
+        }
+      }
+
+      document.getElementById("outputArea").value = formatted.trim();
+      copyToClipboard()
+    }
+
+    function copyToClipboard() {
+      const output = document.getElementById("outputArea");
+      output.select();
+      output.setSelectionRange(0, 99999); // iOS対応
+      document.execCommand("copy");
+      alert("コピーしました！");
+    }
+
+    function getStation(line) {
+          const PosStart = line.indexOf('\t');
+          let PosEnd1 = line.indexOf('地図');
+          let PosEnd2 = line.indexOf('出口');
+          let PosEnd3 = line.indexOf('時刻表');
+          let PosEnd4 = line.indexOf('(');
+          PosEnd1 = (PosEnd1 < PosStart) ? line.length : PosEnd1;
+          PosEnd2 = (PosEnd2 < PosStart) ? line.length : PosEnd2;
+          PosEnd3 = (PosEnd3 < PosStart) ? line.length : PosEnd3;
+          PosEnd4 = (PosEnd4 < PosStart) ? line.length : PosEnd4;
+
+          const PosEnd = Math.min(PosEnd1,PosEnd2,PosEnd3,PosEnd4);
+
+          const station = line.slice(PosStart, PosEnd).trim();
+
+      return station;
+    }
+
+</script>
+
+</body>
+</html>
