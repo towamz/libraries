@@ -16,6 +16,9 @@
   <textarea id="medOutputArea" rows="10" cols="60" readonly></textarea>
 
   <br><br>
+  <textarea id="medOutputArea2" rows="10" cols="60" readonly></textarea>
+
+  <br><br>
   <textarea id="outputArea" rows="10" cols="60" readonly></textarea>
   <br>
   <button onclick="copyToClipboard('outputArea')">コピー</button>
@@ -31,6 +34,7 @@
       const targetLines = getTargetLines();
       document.getElementById("medOutputArea").value = targetLines;
       const formattedLines = getFormattedLines(targetLines);
+      document.getElementById("medOutputArea2").value = formattedLines;
       const formattedLines2 = getFormattedLines2(formattedLines);
       document.getElementById("outputArea").value = formattedLines2;
       copyToClipboard("outputArea");
