@@ -137,8 +137,9 @@
         }else if (regex4.test(line)) {
           formattedLines += getTimeSingle(line) + getStation(line) + "\n";
         }else{
-          if(line == '徒歩'){
-            formattedLines += line + "\n";
+          // if(line == '徒歩'){
+          if (line.includes('徒歩')) {
+            formattedLines += '徒歩' + "\n";
           }
         }
       }
@@ -335,19 +336,32 @@
     }
 
     function getStation(line) {
-          const PosStart = line.indexOf('\t');
-          let PosEnd1 = line.indexOf('地図');
-          let PosEnd2 = line.indexOf('出口');
-          let PosEnd3 = line.indexOf('時刻表');
-          let PosEnd4 = line.indexOf('(');
-          PosEnd1 = (PosEnd1 < PosStart) ? line.length : PosEnd1;
-          PosEnd2 = (PosEnd2 < PosStart) ? line.length : PosEnd2;
-          PosEnd3 = (PosEnd3 < PosStart) ? line.length : PosEnd3;
-          PosEnd4 = (PosEnd4 < PosStart) ? line.length : PosEnd4;
+      const PosStart = line.indexOf('\t');
+      // let PosEnd1 = line.indexOf('地図');
+      // let PosEnd2 = line.indexOf('出口');
+      // let PosEnd3 = line.indexOf('時刻表');
+      // let PosEnd4 = line.indexOf('(');
+      // let PosEnd5 = line.indexOf('/');
+      // PosEnd1 = (PosEnd1 < PosStart) ? line.length : PosEnd1;
+      // PosEnd2 = (PosEnd2 < PosStart) ? line.length : PosEnd2;
+      // PosEnd3 = (PosEnd3 < PosStart) ? line.length : PosEnd3;
+      // PosEnd4 = (PosEnd4 < PosStart) ? line.length : PosEnd4;
+      // PosEnd5 = (PosEnd5 < PosStart) ? line.length : PosEnd5;
 
-          const PosEnd = Math.min(PosEnd1,PosEnd2,PosEnd3,PosEnd4);
+      // const PosEnd = Math.min(PosEnd1,PosEnd2,PosEnd3,PosEnd4,PosEnd5);
 
-          const station = line.slice(PosStart, PosEnd).trim();
+      // const station = line.slice(PosStart, PosEnd).trim();
+
+      const keywords = ['地図', '出口', '時刻表', '(', '/'];
+
+      let PosEnds = keywords.map(keyword => {
+          const pos = line.indexOf(keyword);
+          return (pos < PosStart) ? line.length : pos;
+      });
+
+      const PosEnd = Math.min(...PosEnds);
+
+      const station = line.slice(PosStart, PosEnd).trim();
 
       return station;
     }
