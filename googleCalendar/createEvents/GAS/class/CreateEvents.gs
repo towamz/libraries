@@ -2,7 +2,8 @@ class CreateEvents {
   constructor(calendarId = null, allDayEvent = false, sheetName = null) {
     // 格納[0][0]がA1(1,1)なのでデータをシートに転記するときは行列が各+1
     this._offsetArySh = 1 
-    this._calendar = this._calendarId
+    this._sleepMs = 1000;
+    this._calendar = calendarId
       ? CalendarApp.getCalendarById(calendarId)
       : CalendarApp.getDefaultCalendar();
     // シートはsetterで設定する
@@ -47,8 +48,6 @@ class CreateEvents {
     } else {
       throw new Error("無効な色が指定されました \n An invalid color is specified");
     }
-
-    this._color = colorIndex;
   }
   get color() {
     switch (this._color) {
@@ -221,7 +220,7 @@ class CreateEvents {
   getDateAllDay(date){
     let dateObj = new Date(date);
 
-    if (isNaN(dateObj) || isNaN(timeObj)) {
+    if (isNaN(dateObj)) {
       throw new Error('無効な日付です: ');
     }
     dateObj.setHours(0,0,0,0);
@@ -352,8 +351,8 @@ class CreateEvents {
         console.log("skip->", data[i]);
         continue;
       }else{
-        // GASは大量に実行するとエラーとなる場合があるので1秒置く
-        Utilities.sleep(1000);
+        // GASは大量に実行するとエラーとなる場合があるので指定ミリ秒止める
+        Utilities.sleep(this._sleepMs);
         console.log("start->",i, data[i]);
         try{
           let event;
@@ -402,4 +401,3 @@ class CreateEvents {
       setValues(dataEventIds);
   }
 }
-
