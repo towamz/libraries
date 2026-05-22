@@ -10,12 +10,13 @@ Private TargetHeaders_() As String
 
 Public Property Set Ws(arg1 As Worksheet)
     Set Ws_ = arg1
+    LastRowNumber_ = Ws_.Rows.Count
 End Property
 
 Public Property Let FirstRowNumber(arg1 As Long)
     '引数が行番号として有効か判定する / judge the argument is valid as a row number
     On Error Resume Next
-    Debug.Print Rows(arg1).Address
+    Debug.Print Ws_.Rows(arg1).Address
     
     If Err.Number <> 0 Then
         Debug.Print Err.Number & Err.Description
@@ -26,11 +27,10 @@ Public Property Let FirstRowNumber(arg1 As Long)
     FirstRowNumber_ = arg1
 End Property
 
-
 Public Property Let LastRowNumber(arg1 As Long)
     '引数が行番号として有効か判定する / judge the argument is valid as a row number
     On Error Resume Next
-    Debug.Print Rows(arg1).Address
+    Debug.Print Ws_.Rows(arg1).Address
     
     If Err.Number <> 0 Then
         Debug.Print Err.Number & Err.Description
@@ -41,22 +41,33 @@ Public Property Let LastRowNumber(arg1 As Long)
     LastRowNumber_ = arg1
 End Property
 
-
-Public Property Let TargetHeadersRowNumber(arg1 As Long)
-    '引数が行番号として有効か判定する / judge the argument is valid as a row number
-    On Error Resume Next
-    Debug.Print Rows(arg1).Address
+Public Property Let TargetHeadersRange(arg1 As Range)
+    Dim r As Range
     
-    If Err.Number <> 0 Then
-        Debug.Print Err.Number & Err.Description
-        Err.Raise 1001, , "行番号が正しくありません"
+    If arg1.Rows.Count <> 1 Then
+        Err.Raise 9999, "TargetHeadersRange", "見出しセル番地は1行で指定してください"
     End If
-    On Error GoTo 0
     
-    TargetHeadersRowNumber_ = arg1
+    
+    '見出し行番号を設定
+    FirstRowNumber = arg1.Row
+    
+    If TargetHeadersRowNumber_ = -1 Then
+        TargetHeadersRowNumber_ = FirstRowNumber_
+    ElseIf TargetHeadersRowNumber_ <> FirstRowNumber_ Then
+        
+        Err.Raise 9999, "TargetHeadersRange", _
+                        "見出しは同じ行を指定してください" & vbCrLf & _
+                        "設定済行:" & TargetHeadersRowNumber_ & vbCrLf & _
+                        "指定行:" & FirstRowNumber_
+    End If
+
+
+    For Each r In arg1
+        TargetColumnLetter = r.Column
+    Next r
 
 End Property
-
 
 Public Property Let TargetColumnLetter(arg1 As String)
     If (Not TargetHeaders_) = -1 Then
@@ -71,7 +82,6 @@ Public Property Let TargetColumnLetter(arg1 As String)
 
 End Property
 
-
 Public Property Let TargetColumnNumber(arg1 As Long)
     If (Not TargetHeaders_) = -1 Then
         ReDim TargetHeaders_(1, 0)
@@ -82,7 +92,6 @@ Public Property Let TargetColumnNumber(arg1 As Long)
     TargetHeaders_(0, UBound(TargetHeaders_, 2)) = arg1
     TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 0
 End Property
-
 
 Public Property Let TargetHeader(arg1 As String)
     If (Not TargetHeaders_) = -1 Then
@@ -99,10 +108,12 @@ End Property
 Private Sub Class_Initialize()
     '検索対象行を設定(デフォルトでは全行) / set target rows (default is all rows)
     FirstRowNumber_ = 1
-    LastRowNumber_ = Rows.Count
+'    LastRowNumber_ = Rows.Count →ws_を設定されたときに同時に設定する
 
     '見出し行(デフォルト:1) / headerRow (default is 1)
-    TargetHeadersRowNumber_ = 1
+    'セル番地で指定できるようにしたので、セル番地指定とそれ以外の指定を検知できるように-1を指定する
+    'change default is -1 to detect if TargetHeadersRange is used.
+    TargetHeadersRowNumber_ = -1
 End Sub
 
 Private Sub getColumnNumberFromHeader()
@@ -112,6 +123,10 @@ Private Sub getColumnNumberFromHeader()
     Dim i As Long
     
     isValid = False
+    
+    If TargetHeadersRowNumber_ = -1 Then
+        TargetHeadersRowNumber_ = 1
+    End If
     
     For i = LBound(TargetHeaders_, 2) To UBound(TargetHeaders_, 2)
         '見出し文字列で指定されている場合は検索する
@@ -189,7 +204,7 @@ Public Function getLastRow() As Long
                 Exit For
             End If
         
-            currentLastRowDataNumber = Ws_.Cells(LastRowNumber_, CLng(TargetHeaders_(0, i))).End(xlUp).row
+            currentLastRowDataNumber = Ws_.Cells(LastRowNumber_, CLng(TargetHeaders_(0, i))).End(xlUp).Row
         
             '取得した行が検索開始行と同じときはセルに値があるか確認する
             'check the cell if the currentRow is equal to the first row
@@ -229,6 +244,9 @@ Public Function getDataRows() As Range
     End If
 
 End Function
+
+
+
 
 
 'Err.Raise 1001, , "行番号が正しくありません"
