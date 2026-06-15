@@ -1,6 +1,6 @@
 Option Explicit
 
-Sub setDataToSheet()
+Sub arrayToRangeSample()
     Dim rng11 As Range: Set rng11 = Range("B5")
     Dim rng12 As Range: Set rng12 = Range("B6")
     Dim rng21 As Range: Set rng21 = Range("B7")
