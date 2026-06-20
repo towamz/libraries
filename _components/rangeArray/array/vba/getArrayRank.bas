@@ -1,21 +1,19 @@
-Function getArrayRank(aryData As Variant, Optional maxBaseNumber As Long = 60) As Long
-    Dim i As Long
-    Dim tmp As Long
+Function getArrayRank(aryData As Variant) As Long
+    Dim n As Long
+    Dim tmp As Variant
     
-    If Not IsArray(aryData) Then
-         getArrayRank = 0
-         Exit Function
-    End If
-    
-    For i = maxBaseNumber To 1 Step -1
-        On Error Resume Next
-        tmp = LBound(aryData, i)
-        If Err.Number = 0 Then
-            getArrayRank = i
+    On Error Resume Next
+    For n = 1 To 60
+        Err.Clear
+        tmp = LBound(aryData, n)
+        If Err.Number <> 0 Then
+            getArrayRank = n - 1
             On Error GoTo 0
             Exit Function
         End If
-        On Error GoTo 0
     Next
-    
+    On Error GoTo 0
+    'VBAの配列は最大60次元
+    getArrayRank = 60
+
 End Function
