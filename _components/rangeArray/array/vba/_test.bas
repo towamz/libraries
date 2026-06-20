@@ -37,3 +37,12 @@ Sub rebaseArraytest3()
     aryData1 = 5
     aryData2 = rebaseArray(aryData1, 1, 2)
 End Sub
+
+Sub sliceArrayTest()
+    Dim ary As Variant
+
+'    ary = sliceArray(Range("D5:E7"), Worksheets("Sheet2"))
+    ary = sliceArray(Range("A2:C3"), Worksheets("Sheet2"))
+
+    Stop
+End Sub
