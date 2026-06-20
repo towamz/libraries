@@ -8,7 +8,7 @@ Function rebaseArray(aryData As Variant, Optional newRowBase As Long = 1, Option
     Dim i As Long
     Dim j As Long
 
-    arrayRank = getArrayRank(aryData, 3)
+    arrayRank = getArrayRank(aryData)
 
     Select Case arrayRank
         Case 0
