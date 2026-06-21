@@ -48,10 +48,10 @@ Sub sliceArrayTest()
 End Sub
 
 
-Sub getLastRangeTest()
+Sub getLastUsedRangeTest()
     Dim rng As range
     
-    Set rng = getLastRange(Worksheets("Sheet2"))
+    Set rng = getLastUsedRange(Worksheets("Sheet2"))
     
     Stop
 End Sub
