@@ -1,6 +1,6 @@
-Function getLastRange(ws As Worksheet) As Range
-    Dim rngLastRow As Range
-    Dim rngLastCol As Range
+Function getLastUsedRange(ws As Worksheet) As range
+    Dim rngLastRow As range
+    Dim rngLastCol As range
 
     Set rngLastRow = ws.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious)
     
@@ -11,6 +11,6 @@ Function getLastRange(ws As Worksheet) As Range
     
     Set rngLastCol = ws.Cells.Find("*", SearchOrder:=xlByColumns, SearchDirection:=xlPrevious)
     
-    Set getLastRange = ws.Cells(rngLastRow.Row, rngLastCol.Column)
+    Set getLastUsedRange = ws.Cells(rngLastRow.Row, rngLastCol.Column)
 
 End Function
