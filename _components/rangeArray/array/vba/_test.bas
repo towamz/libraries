@@ -46,3 +46,12 @@ Sub sliceArrayTest()
 
     Stop
 End Sub
+
+
+Sub getLastRangeTest()
+    Dim rng As range
+    
+    Set rng = getLastRange(Worksheets("Sheet2"))
+    
+    Stop
+End Sub
