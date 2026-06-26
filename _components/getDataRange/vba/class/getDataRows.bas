@@ -64,7 +64,7 @@ Public Property Let LastRowNumber(arg1 As Long)
 End Property
 
 
-Public Property Let TargetHeadersRange(arg1 As Range)
+Public Property Set TargetHeadersRange(arg1 As Range)
     Dim r As Range
     Dim rowNumber As Long
     
@@ -241,7 +241,7 @@ End Function
 
 
 'データ範囲のrangeオブジェクトを取得(行全体) / get data range object(entire rows)
-Public Function getDataRows() As Range
+Public Function getDataRows(Optional withHeader As Boolean = False) As Range
     
     LastRowDataNumber_ = getLastDataRowNumber
     
@@ -249,13 +249,17 @@ Public Function getDataRows() As Range
         'データがないときはnothingを返す / set nothing if data does not exist
         Set getDataRows = Nothing
     Else
-        Set getDataRows = Ws_.Rows(CStr(FirstRowNumber_) & ":" & CStr(LastRowDataNumber_))
+        If withHeader Then
+            Set getDataRows = Ws_.Rows(CStr(HeaderRowNumber_) & ":" & CStr(LastRowDataNumber_))
+        Else
+            Set getDataRows = Ws_.Rows(CStr(FirstRowNumber_) & ":" & CStr(LastRowDataNumber_))
+        End If
     End If
 
 End Function
 
 'データ範囲のrangeオブジェクトを取得(指定行列) / get data range object(specified Rows and Columns)
-Public Function getDataRange(Optional firstColNumber As Long = -1, Optional lastColNumber As Long = -1) As Range
+Public Function getDataRange(Optional withHeader As Boolean = False, Optional firstColNumber As Long = -1, Optional lastColNumber As Long = -1) As Range
     
     LastRowDataNumber_ = getLastDataRowNumber
     
@@ -271,26 +275,31 @@ Public Function getDataRange(Optional firstColNumber As Long = -1, Optional last
             lastColNumber = Application.WorksheetFunction.Max(TargetColNumbers_.Keys)
         End If
         
-        Set getDataRange = Ws_.Range(Ws_.Cells(FirstRowNumber_, firstColNumber), Ws_.Cells(LastRowDataNumber_, lastColNumber))
+        If withHeader Then
+            Set getDataRange = Ws_.Range(Ws_.Cells(HeaderRowNumber_, firstColNumber), Ws_.Cells(LastRowDataNumber_, lastColNumber))
+        Else
+            Set getDataRange = Ws_.Range(Ws_.Cells(FirstRowNumber_, firstColNumber), Ws_.Cells(LastRowDataNumber_, lastColNumber))
+        End If
+    
     End If
 
 End Function
 
 
-'シート関連
-Err.Raise 1001, "", "検索対象シートが設定されていません。"
-'行関連
-Err.Raise 1011, "", "行番号が正しくありません"
-Err.Raise 1012, "", "既に設定済みです:"
-'列関連
-Err.Raise 1021, "", "列番号は1~" & Ws_.Columns.Count & "です"
-Err.Raise 1022, "", "検索対象列が設定されていません。"
-Err.Raise 1026, "", "列記号はA:" & Split(Ws_.Cells(1, Ws_.Columns.Count).Address, "$")(1) & "です"
-'見出し関連
-Err.Raise 1031, "", "見出しセル番地は1行で指定してください"
-Err.Raise 1032, "", "見出しは同じ行を指定してください"
-Err.Raise 1033, "", "指定されたタイトル文字列が2つ以上あります"
-'整合性関連
-Err.Raise 1041, "", "見出し行 < 検索対象行(開始)に設定してください。"
-Err.Raise 1042, "", "検索対象行(開始) < 検索対象行(終了)に設定してください。"
+''シート関連
+'Err.Raise 1001, "", "検索対象シートが設定されていません。"
+''行関連
+'Err.Raise 1011, "", "行番号が正しくありません"
+'Err.Raise 1012, "", "既に設定済みです:"
+''列関連
+'Err.Raise 1021, "", "列番号は1~" & Ws_.Columns.Count & "です"
+'Err.Raise 1022, "", "検索対象列が設定されていません。"
+'Err.Raise 1026, "", "列記号はA:" & Split(Ws_.Cells(1, Ws_.Columns.Count).Address, "$")(1) & "です"
+''見出し関連
+'Err.Raise 1031, "", "見出しセル番地は1行で指定してください"
+'Err.Raise 1032, "", "見出しは同じ行を指定してください"
+'Err.Raise 1033, "", "指定されたタイトル文字列が2つ以上あります"
+''整合性関連
+'Err.Raise 1041, "", "見出し行 < 検索対象行(開始)に設定してください。"
+'Err.Raise 1042, "", "検索対象行(開始) < 検索対象行(終了)に設定してください。"
 
