@@ -6,5 +6,4 @@ Sub stvMain()
     STV.FirstDayRange = Worksheets("Sheet1").Range("A2")
     
     STV.execution
-
 End Sub
