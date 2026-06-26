@@ -4,229 +4,238 @@ Private Ws_ As Worksheet
 
 Private FirstRowNumber_ As Long
 Private LastRowNumber_ As Long
+Private HeaderRowNumber_ As Long
 Private LastRowDataNumber_ As Long
-Private TargetHeadersRowNumber_ As Long
-Private TargetHeaders_() As String
+Private TargetHeaderTexts_ As Object
+Private TargetColNumbers_ As Object
 
-Public Property Set Ws(arg1 As Worksheet)
+Public Property Set ws(arg1 As Worksheet)
     Set Ws_ = arg1
-    LastRowNumber_ = Ws_.Rows.Count
+End Property
+
+Public Property Let HeaderRowNumber(arg1 As Long)
+    If Ws_ Is Nothing Then
+        Err.Raise 1001, "HeaderRowNumber", "検索対象シートが設定されていません。"
+    End If
+    
+    If arg1 < 1 Or Ws_.Rows.Count < arg1 Then
+        Err.Raise 1011, "HeaderRowNumber", "行番号が正しくありません"
+    End If
+    
+    If HeaderRowNumber_ <> -1 Then
+        Err.Raise 1012, "HeaderRowNumber", "既に設定済みです:" & HeaderRowNumber_
+    End If
+    
+    HeaderRowNumber_ = arg1
 End Property
 
 Public Property Let FirstRowNumber(arg1 As Long)
-    '引数が行番号として有効か判定する / judge the argument is valid as a row number
-    On Error Resume Next
-    Debug.Print Ws_.Rows(arg1).Address
-    
-    If Err.Number <> 0 Then
-        Debug.Print Err.Number & Err.Description
-        Err.Raise 1001, , "行番号が正しくありません"
+    If Ws_ Is Nothing Then
+        Err.Raise 1001, "FirstRowNumber", "検索対象シートが設定されていません。"
     End If
-    On Error GoTo 0
+    
+    '引数が行番号として有効か判定する / judge the argument is valid as a row number
+    If arg1 < 2 Or Ws_.Rows.Count < arg1 Then
+        Err.Raise 1011, "FirstRowNumber", "行番号が正しくありません"
+    End If
+    
+    If FirstRowNumber_ <> -1 Then
+        Err.Raise 1012, "FirstRowNumber", "既に設定済みです:" & FirstRowNumber_
+    End If
     
     FirstRowNumber_ = arg1
 End Property
 
 Public Property Let LastRowNumber(arg1 As Long)
-    '引数が行番号として有効か判定する / judge the argument is valid as a row number
-    On Error Resume Next
-    Debug.Print Ws_.Rows(arg1).Address
-    
-    If Err.Number <> 0 Then
-        Debug.Print Err.Number & Err.Description
-        Err.Raise 1001, , "行番号が正しくありません"
+    If Ws_ Is Nothing Then
+        Err.Raise 1001, "LastRowNumber", "検索対象シートが設定されていません。"
     End If
-    On Error GoTo 0
+    
+    '引数が行番号として有効か判定する / judge the argument is valid as a row number
+    If arg1 < 1 Or Ws_.Rows.Count < arg1 Then
+        Err.Raise 1011, "LastRowNumber", "行番号が正しくありません"
+    End If
+    
+    If LastRowNumber_ <> -1 Then
+        Err.Raise 1012, "LastRowNumber", "既に設定済みです:" & LastRowNumber_
+    End If
     
     LastRowNumber_ = arg1
 End Property
 
+
 Public Property Let TargetHeadersRange(arg1 As Range)
     Dim r As Range
+    Dim rowNumber As Long
     
     If arg1.Rows.Count <> 1 Then
-        Err.Raise 9999, "TargetHeadersRange", "見出しセル番地は1行で指定してください"
+        Err.Raise 1031, "TargetHeadersRange", "見出しセル番地は1行で指定してください"
     End If
-    
-    
-    '見出し行番号を設定
-    FirstRowNumber = arg1.Row
-    
-    If TargetHeadersRowNumber_ = -1 Then
-        TargetHeadersRowNumber_ = FirstRowNumber_
-    ElseIf TargetHeadersRowNumber_ <> FirstRowNumber_ Then
         
-        Err.Raise 9999, "TargetHeadersRange", _
+    '見出し行番号を設定
+    rowNumber = arg1.Row
+    
+    If HeaderRowNumber_ = -1 Then
+        HeaderRowNumber = rowNumber
+    ElseIf HeaderRowNumber_ <> rowNumber Then
+        Err.Raise 1032, "TargetHeadersRange", _
                         "見出しは同じ行を指定してください" & vbCrLf & _
-                        "設定済行:" & TargetHeadersRowNumber_ & vbCrLf & _
-                        "指定行:" & FirstRowNumber_
+                        "設定済行:" & HeaderRowNumber_ & vbCrLf & _
+                        "指定行:" & rowNumber
     End If
-
 
     For Each r In arg1
-        TargetColumnLetter = r.Column
+        TargetColumnNumber = r.Column
     Next r
 
 End Property
 
 Public Property Let TargetColumnLetter(arg1 As String)
-    If (Not TargetHeaders_) = -1 Then
-        ReDim TargetHeaders_(1, 0)
-    Else
-        ReDim Preserve TargetHeaders_(1, UBound(TargetHeaders_, 2) + 1)
-    End If
-    
+    On Error Resume Next
     '列(英字)を列(数値)に変更 / get row number from row alphabet
-    TargetHeaders_(0, UBound(TargetHeaders_, 2)) = Ws_.Columns(arg1).Column
-    TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 0
+    TargetColumnNumber = Ws_.Columns(arg1).Column
 
+    If Err.Number <> 0 Then
+        On Error GoTo 0
+        Err.Raise 1026, "TargetColumnLetter", "列記号はA:" & Split(Ws_.Cells(1, Ws_.Columns.Count).Address, "$")(1) & "です"
+    End If
 End Property
 
 Public Property Let TargetColumnNumber(arg1 As Long)
-    If (Not TargetHeaders_) = -1 Then
-        ReDim TargetHeaders_(1, 0)
-    Else
-        ReDim Preserve TargetHeaders_(1, UBound(TargetHeaders_, 2) + 1)
+    If arg1 < 1 Or Ws_.Columns.Count < arg1 Then
+        Err.Raise 1021, "TargetColumnNumber", "列番号は1~" & Ws_.Columns.Count & "です"
     End If
-    
-    TargetHeaders_(0, UBound(TargetHeaders_, 2)) = arg1
-    TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 0
+
+    If Not TargetColNumbers_.Exists(CLng(arg1)) Then
+        TargetColNumbers_.Add CLng(arg1), ""
+    End If
 End Property
 
-Public Property Let TargetHeader(arg1 As String)
-    If (Not TargetHeaders_) = -1 Then
-        ReDim TargetHeaders_(1, 0)
-    Else
-        ReDim Preserve TargetHeaders_(1, UBound(TargetHeaders_, 2) + 1)
+Public Property Let TargetHeaderText(arg1 As String)
+    If Not TargetHeaderTexts_.Exists(arg1) Then
+        TargetHeaderTexts_.Add arg1, ""
     End If
-    
-    TargetHeaders_(0, UBound(TargetHeaders_, 2)) = arg1
-    TargetHeaders_(1, UBound(TargetHeaders_, 2)) = 1
 End Property
 
 
 Private Sub Class_Initialize()
-    '検索対象行を設定(デフォルトでは全行) / set target rows (default is all rows)
-    FirstRowNumber_ = 1
-'    LastRowNumber_ = Rows.Count →ws_を設定されたときに同時に設定する
+    Set TargetColNumbers_ = CreateObject("Scripting.Dictionary")
+    Set TargetHeaderTexts_ = CreateObject("Scripting.Dictionary")
+    
+    '未設定(-1)を設定
+    FirstRowNumber_ = -1
+    LastRowNumber_ = -1
+    HeaderRowNumber_ = -1
+    LastRowDataNumber_ = -1
 
-    '見出し行(デフォルト:1) / headerRow (default is 1)
-    'セル番地で指定できるようにしたので、セル番地指定とそれ以外の指定を検知できるように-1を指定する
-    'change default is -1 to detect if TargetHeadersRange is used.
-    TargetHeadersRowNumber_ = -1
 End Sub
 
-Private Sub getColumnNumberFromHeader()
-    Dim testRange As Range
-    Dim firstAddress As String
-    Dim isValid As Boolean
-    Dim i As Long
+Private Sub getColumnNumberFromHeaderTexts()
+    Dim testRange1 As Range
+    Dim testRange2 As Range
+    Dim key As Variant
     
-    isValid = False
-    
-    If TargetHeadersRowNumber_ = -1 Then
-        TargetHeadersRowNumber_ = 1
-    End If
-    
-    For i = LBound(TargetHeaders_, 2) To UBound(TargetHeaders_, 2)
-        '見出し文字列で指定されている場合は検索する
-        If TargetHeaders_(1, i) = 1 Then
-        
-            'タイトルが2つ以上ある場合は例外を投げるため2回検索
-            Set testRange = Ws_.Rows(TargetHeadersRowNumber_).Find(What:=TargetHeaders_(0, i), LookIn:=xlValues, LookAt:=xlWhole)
-    
-            If testRange Is Nothing Then
-                Debug.Print "指定されたタイトル文字列は見つかりませんでした:" & TargetHeaders_(0, i)
-                TargetHeaders_(0, i) = -1
-                TargetHeaders_(1, i) = -1
-                '一つでも有効なデータがあれば有効なので、isValid = Falseはしない
-            Else
-                firstAddress = testRange.Address
-                Set testRange = Ws_.Rows(TargetHeadersRowNumber_).FindNext(testRange)
-    
-                If firstAddress = testRange.Address Then
-                    '登録
-                    Debug.Print "登録します:" & i & ":" & TargetHeaders_(0, i) & ":" & firstAddress
-                    TargetHeaders_(0, i) = testRange.EntireColumn.Column
-                    TargetHeaders_(1, i) = 0
-                    '見出し文字列から列番号に変換できたので有効判定する
-                    isValid = True
-                Else
-                    'エラー
-                    Err.Raise 1021, , "指定されたタイトル文字列が2つ以上あります"
-                End If
-            End If
-        Else
-            '列番号で指定されているデータがあったので有効判定する
-            isValid = True
-        End If
-    Next i
+    For Each key In TargetHeaderTexts_.Keys
+        'タイトルが2つ以上ある場合は例外を投げるため2回検索
+        Set testRange1 = Ws_.Rows(HeaderRowNumber_).Find(What:=key, LookIn:=xlValues, LookAt:=xlWhole)
 
-    If Not isValid Then
-        Err.Raise 1004, , "有効な検索対象列が設定されていません。"
-    End If
+        If testRange1 Is Nothing Then
+            Debug.Print "指定されたタイトル文字列は見つかりませんでした:" & key
+        Else
+            Set testRange2 = Ws_.Rows(HeaderRowNumber_).FindNext(testRange1)
+
+            If testRange1.Address = testRange2.Address Then
+                '登録
+                TargetColumnNumber = testRange1.EntireColumn.Column
+            Else
+                'エラー
+                Err.Raise 1033, "getColumnNumberFromHeaderTexts", "指定されたタイトル文字列が2つ以上あります"
+            End If
+        End If
+
+    Next key
+    
+    TargetHeaderTexts_.RemoveAll
 
 End Sub
 
 'データ最終行番号を取得 / get the data last row number
-Public Function getLastRow() As Long
+Public Function getLastDataRowNumber() As Long
     Dim currentLastRowDataNumber As Long
-    Dim i As Long
+    Dim key As Variant
     
     '--------------初期確認--------------
     If Ws_ Is Nothing Then
-        Err.Raise 1001, , "検索対象シートが設定されていません。"
-    End If
-    
-    If FirstRowNumber_ > LastRowNumber_ Then
-        Err.Raise 1002, , "検索対象行(開始) < 検索対象行(終了)に設定してください。" & vbCrLf & "開始行:" & FirstRowNumber_ & vbCrLf & "終了行:" & LastRowNumber_
+        Err.Raise 1001, "getLastDataRowNumber", "検索対象シートが設定されていません。"
     End If
 
-    If (Not TargetHeaders_) = -1 Then
-        Err.Raise 1003, , "検索対象列が設定されていません。"
+    ''未設定値に既定の値を設定(FirstRowNumber_, HeaderRowNumber_)
+    If FirstRowNumber_ = -1 And HeaderRowNumber_ = -1 Then
+        HeaderRowNumber = 1
+        FirstRowNumber = 2
+    ElseIf FirstRowNumber_ = -1 Then
+        FirstRowNumber = HeaderRowNumber_ + 1
+    ElseIf HeaderRowNumber_ = -1 Then
+        HeaderRowNumber = FirstRowNumber_ - 1
+    End If
+    
+    ''未設定値に既定の値を設定(LastRowNumber_)
+    If LastRowNumber_ = -1 Then
+        LastRowNumber = Ws_.Rows.Count
+    End If
+
+    ''行設定値の整合性確認(FirstRowNumber_, HeaderRowNumber_,LastRowNumber_)
+    If HeaderRowNumber_ >= FirstRowNumber_ Then
+        Err.Raise 1041, "getLastDataRowNumber", "見出し行 < 検索対象行(開始)に設定してください。" & vbCrLf & "見出し行:" & HeaderRowNumber_ & vbCrLf & "開始行:" & FirstRowNumber_
+    End If
+
+    If FirstRowNumber_ > LastRowNumber_ Then
+        Err.Raise 1042, "getLastDataRowNumber", "検索対象行(開始) < 検索対象行(終了)に設定してください。" & vbCrLf & "開始行:" & FirstRowNumber_ & vbCrLf & "終了行:" & LastRowNumber_
+    End If
+
+    '見出し文字列から列番号に変換する
+    Call getColumnNumberFromHeaderTexts
+    
+    If TargetColNumbers_.Count = 0 Then
+        Err.Raise 1022, "getLastDataRowNumber", "検索対象列が設定されていません。"
     End If
     '--------------初期確認終了--------------
-    
-    '見出し文字列から列番号に変換する
-    Call getColumnNumberFromHeader
 
     '行番号を-1(データなし)に設定
     LastRowDataNumber_ = -1
     
-    For i = LBound(TargetHeaders_, 2) To UBound(TargetHeaders_, 2)
-        '列番号指定であれば検索対象
-        If TargetHeaders_(1, i) = 0 Then
-               
-            'データ範囲最終にデータがあった場合は最終行を設定してループを抜ける(これ以上検索不要)
-            'exit for if data exist in the last row(no need to further search)
-            If Ws_.Cells(LastRowNumber_, CLng(TargetHeaders_(0, i))) <> "" Then
-                LastRowDataNumber_ = LastRowNumber_
-                Exit For
-            End If
-        
-            currentLastRowDataNumber = Ws_.Cells(LastRowNumber_, CLng(TargetHeaders_(0, i))).End(xlUp).Row
-        
-            '取得した行が検索開始行と同じときはセルに値があるか確認する
-            'check the cell if the currentRow is equal to the first row
-            If currentLastRowDataNumber = FirstRowNumber_ Then
-                If Ws_.Cells(currentLastRowDataNumber, CLng(TargetHeaders_(0, i))) = "" Then
-                    currentLastRowDataNumber = -1
-                End If
-            '取得した行が検索開始行より小さい場合はデータなしと判定する
-            'judge no data if the currentRow is smaller than the first row
-            ElseIf currentLastRowDataNumber < FirstRowNumber_ Then
-                    currentLastRowDataNumber = -1
-            End If
-    
-            '今回取得した最終行が今まで最終行より大きい場合は書き換え
-            'overwrite if the currentRow is bigger than the previous Row
-            If LastRowDataNumber_ < currentLastRowDataNumber Then
-                LastRowDataNumber_ = currentLastRowDataNumber
-            End If
+    For Each key In TargetColNumbers_.Keys
+
+        'データ範囲最終にデータがあった場合は最終行を設定してループを抜ける(これ以上検索不要)
+        'exit for if data exist in the last row(no need to further search)
+        If Ws_.Cells(LastRowNumber_, CLng(key)) <> "" Then
+            LastRowDataNumber_ = LastRowNumber_
+            Exit For
         End If
-    Next i
     
-    getLastRow = LastRowDataNumber_
+        currentLastRowDataNumber = Ws_.Cells(LastRowNumber_, CLng(key)).End(xlUp).Row
+    
+        '取得した行が検索開始行と同じときはセルに値があるか確認する
+        'check the cell if the currentRow is equal to the first row
+        If currentLastRowDataNumber = FirstRowNumber_ Then
+            If Ws_.Cells(currentLastRowDataNumber, CLng(key)) = "" Then
+                currentLastRowDataNumber = -1
+            End If
+        '取得した行が検索開始行より小さい場合はデータなしと判定する
+        'judge no data if the currentRow is smaller than the first row
+        ElseIf currentLastRowDataNumber < FirstRowNumber_ Then
+                currentLastRowDataNumber = -1
+        End If
+    
+        '今回取得した最終行が今まで最終行より大きい場合は書き換え
+        'overwrite if the currentRow is bigger than the previous Row
+        If LastRowDataNumber_ < currentLastRowDataNumber Then
+            LastRowDataNumber_ = currentLastRowDataNumber
+        End If
+    
+    Next key
+    
+    getLastDataRowNumber = LastRowDataNumber_
 
 End Function
 
@@ -234,7 +243,7 @@ End Function
 'データ範囲のrangeオブジェクトを取得(行全体) / get data range object(entire rows)
 Public Function getDataRows() As Range
     
-    Call getLastRow
+    LastRowDataNumber_ = getLastDataRowNumber
     
     If LastRowDataNumber_ = -1 Then
         'データがないときはnothingを返す / set nothing if data does not exist
@@ -245,10 +254,43 @@ Public Function getDataRows() As Range
 
 End Function
 
+'データ範囲のrangeオブジェクトを取得(指定行列) / get data range object(specified Rows and Columns)
+Public Function getDataRange(Optional firstColNumber As Long = -1, Optional lastColNumber As Long = -1) As Range
+    
+    LastRowDataNumber_ = getLastDataRowNumber
+    
+    If LastRowDataNumber_ = -1 Then
+        'データがないときはnothingを返す / set nothing if data does not exist
+        Set getDataRange = Nothing
+    Else
+        If firstColNumber = -1 Then
+            firstColNumber = Application.WorksheetFunction.Min(TargetColNumbers_.Keys)
+        End If
+        
+        If lastColNumber = -1 Then
+            lastColNumber = Application.WorksheetFunction.Max(TargetColNumbers_.Keys)
+        End If
+        
+        Set getDataRange = Ws_.Range(Ws_.Cells(FirstRowNumber_, firstColNumber), Ws_.Cells(LastRowDataNumber_, lastColNumber))
+    End If
+
+End Function
 
 
-
-
-'Err.Raise 1001, , "行番号が正しくありません"
-
+'シート関連
+Err.Raise 1001, "", "検索対象シートが設定されていません。"
+'行関連
+Err.Raise 1011, "", "行番号が正しくありません"
+Err.Raise 1012, "", "既に設定済みです:"
+'列関連
+Err.Raise 1021, "", "列番号は1~" & Ws_.Columns.Count & "です"
+Err.Raise 1022, "", "検索対象列が設定されていません。"
+Err.Raise 1026, "", "列記号はA:" & Split(Ws_.Cells(1, Ws_.Columns.Count).Address, "$")(1) & "です"
+'見出し関連
+Err.Raise 1031, "", "見出しセル番地は1行で指定してください"
+Err.Raise 1032, "", "見出しは同じ行を指定してください"
+Err.Raise 1033, "", "指定されたタイトル文字列が2つ以上あります"
+'整合性関連
+Err.Raise 1041, "", "見出し行 < 検索対象行(開始)に設定してください。"
+Err.Raise 1042, "", "検索対象行(開始) < 検索対象行(終了)に設定してください。"
 
