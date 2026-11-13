@@ -1,19 +1,19 @@
 <#
 .SYNOPSIS
-    テキストファイルに書いたフォルダ構成を、選択した親フォルダの下に一括作成するGUIツール。
+    テキストファイルに書いたフォルダ構成を、指定した親フォルダの下に一括作成するコンソール版ツール。
 
 .DESCRIPTION
-    - 親フォルダはGUIで選択
     - 作成するフォルダは、スクリプトと同じフォルダの newfolderlist.txt に
       「1行1フォルダ(親フォルダからの相対パス)」で書いておく(パスは下の定数で変更可能)
       空行と、行頭が # の行は無視されます
-    - 既存フォルダがある場合の挙動をGUIで選択
-        * 中断する(何も作成しない)
-        * ないものだけ作成する
-    - 隠しメニュー: Ctrl + Shift + A で「中身を削除して作り直す」が表示されます
+    - 親フォルダはパスを入力する。未入力のままEnterを押すと、フォルダ選択ダイアログが開く
+    - 既存フォルダがある場合の挙動を番号で選択
+        [1] 中断する(何も作成しない)
+        [2] ないものだけ作成する
+    - 隠しメニュー: 番号の入力で 9 を入れると「中身を削除して作り直す」(表示はされない)
 
 .NOTES
-    実行: powershell -ExecutionPolicy Bypass -File .\FolderMaker.ps1
+    実行: powershell -ExecutionPolicy Bypass -File .\FolderMakerCui.ps1
     このファイルは UTF-8 (BOM付き) で保存してください(Windows PowerShell 5.1 で日本語が化けないため)。
 #>
 
@@ -28,37 +28,8 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir         = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 $DEFAULT_LIST_PATH = Join-Path $ScriptDir 'newfolderlist.txt'
 
+# 親フォルダ未入力時の選択ダイアログ用
 Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-[System.Windows.Forms.Application]::EnableVisualStyles()
-
-# ---------------------------------------------------------------
-# 起動時チェック: フォルダ一覧ファイル
-#   - 3バイト以下 : 中身を確認し、未入力(0バイト・BOMのみ・空白のみ)なら終了
-#   - 4バイト以上 : 入力ありとみなして通過(検証は実行時)
-#   - それ以外  : 中身はここでは検証せず通過させる(検証は実行時)
-# ---------------------------------------------------------------
-if (-not (Test-Path -LiteralPath $DEFAULT_LIST_PATH -PathType Leaf)) {
-    try {
-        New-Item -ItemType File -Path $DEFAULT_LIST_PATH | Out-Null
-        $startupMsg  = "フォルダ一覧を作成して再実行してください。`nフォルダ一覧の空ファイルを作成しました。"
-        $startupIcon = 'Information'
-    }
-    catch {
-        $startupMsg  = "フォルダ一覧の空ファイルを作成できませんでした。`n$($_.Exception.Message)"
-        $startupIcon = 'Error'
-    }
-    [void][System.Windows.Forms.MessageBox]::Show($startupMsg, 'FolderMaker', 'OK', $startupIcon)
-    exit
-}
-if ((Get-Item -LiteralPath $DEFAULT_LIST_PATH).Length -le 3) {
-    $listText = [System.IO.File]::ReadAllText($DEFAULT_LIST_PATH, [System.Text.Encoding]::UTF8)
-    if ([string]::IsNullOrWhiteSpace($listText.Trim([char]0xFEFF))) {
-        [void][System.Windows.Forms.MessageBox]::Show(
-            "フォルダ一覧に入力がありません。`n`n$DEFAULT_LIST_PATH", 'FolderMaker', 'OK', 'Information')
-        exit
-    }
-}
 
 # ---------------------------------------------------------------
 # ロジック
@@ -69,6 +40,7 @@ function Read-FolderList {
 
     $folders = New-Object System.Collections.Generic.List[string]
     $errors  = New-Object System.Collections.Generic.List[string]
+    $entries = New-Object System.Collections.Generic.List[object]
     $seen    = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
 
     $lineNo = 0
@@ -77,11 +49,13 @@ function Read-FolderList {
         $line = $raw.Trim()
         if ($line -eq '' -or $line.StartsWith('#')) { continue }
 
+        $text = $line                      # 表示用(書かれたまま)
         $line = ($line -replace '/', '\')
 
         # 絶対パス・ドライブ指定・UNCは不可(親フォルダの外に出さない)
         if ([System.IO.Path]::IsPathRooted($line) -or $line -match '^[A-Za-z]:') {
             $errors.Add("行$($lineNo): 相対パスで書いてください ($raw)")
+            $entries.Add([pscustomobject]@{ Text = $text; Valid = $false })
             continue
         }
         $line = $line.TrimEnd('\')
@@ -98,17 +72,45 @@ function Read-FolderList {
         }
         if ($bad) {
             $errors.Add("行$($lineNo): 使えない名前が含まれています ($raw)")
+            $entries.Add([pscustomobject]@{ Text = $text; Valid = $false })
             continue
         }
 
-        if ($seen.Add($line)) { $folders.Add($line) }
+        if ($seen.Add($line)) {
+            $folders.Add($line)
+            $entries.Add([pscustomobject]@{ Text = $line; Valid = $true })
+        }
     }
 
     [pscustomobject]@{
         Folders = $folders.ToArray()
         Errors  = $errors.ToArray()
+        Entries = $entries.ToArray()
     }
 }
+
+# 一覧の各行の状態を表示し、不正の件数と既存の件数を返す。
+function Show-FolderPreview {
+    param([string]$Parent, [object[]]$Entries)
+
+    $invalidCount = 0
+    $existsCount  = 0
+    foreach ($entry in $Entries) {
+        if (-not $entry.Valid) {
+            Write-Host "[パス不正] $($entry.Text)" -ForegroundColor Red
+            $invalidCount++
+        }
+        elseif (Test-Path -LiteralPath (Join-Path $Parent $entry.Text)) {
+            Write-Host "[重複] $($entry.Text)" -ForegroundColor Yellow
+            $existsCount++
+        }
+        else {
+            Write-Host "[OK] $($entry.Text)" -ForegroundColor Green
+        }
+    }
+    [pscustomobject]@{ Invalid = $invalidCount; Exists = $existsCount }
+}
+
 
 function Test-UnderAny {
     param([string]$Path, [string[]]$Roots)
@@ -174,152 +176,151 @@ function Invoke-FolderCreate {
     Write-Log "完了$label : 作成 $created 件 / スキップ $skipped 件"
 }
 
+
 # ---------------------------------------------------------------
-# GUI
+# コンソール用の入出力
 # ---------------------------------------------------------------
 
-$form = New-Object System.Windows.Forms.Form
-$form.Text            = 'フォルダ一括作成'
-$form.ClientSize      = New-Object System.Drawing.Size(560, 394)
-$form.StartPosition   = 'CenterScreen'
-$form.FormBorderStyle = 'FixedDialog'
-$form.MaximizeBox     = $false
-$form.KeyPreview      = $true
-$form.Font            = New-Object System.Drawing.Font('Yu Gothic UI', 9)
-
-# 親フォルダ
-$lblParent = New-Object System.Windows.Forms.Label
-$lblParent.Text = '親フォルダ'
-$lblParent.Location = New-Object System.Drawing.Point(15, 20)
-$lblParent.AutoSize = $true
-
-$txtParent = New-Object System.Windows.Forms.TextBox
-$txtParent.Location = New-Object System.Drawing.Point(110, 17)
-$txtParent.Size = New-Object System.Drawing.Size(350, 24)
-
-$btnParent = New-Object System.Windows.Forms.Button
-$btnParent.Text = '参照...'
-$btnParent.Location = New-Object System.Drawing.Point(470, 15)
-$btnParent.Size = New-Object System.Drawing.Size(75, 27)
-
-# 既存フォルダがある場合
-$gb = New-Object System.Windows.Forms.GroupBox
-$gb.Text = '既存のフォルダがある場合'
-$gb.Location = New-Object System.Drawing.Point(15, 56)
-$gb.Size = New-Object System.Drawing.Size(530, 108)
-
-$rbAbort = New-Object System.Windows.Forms.RadioButton
-$rbAbort.Text = '中断する(何も作成しない)'
-$rbAbort.Location = New-Object System.Drawing.Point(15, 24)
-$rbAbort.AutoSize = $true
-$rbAbort.Checked = $true
-
-$rbSkip = New-Object System.Windows.Forms.RadioButton
-$rbSkip.Text = 'ないものだけ作成する'
-$rbSkip.Location = New-Object System.Drawing.Point(15, 50)
-$rbSkip.AutoSize = $true
-
-# 隠しメニュー(Ctrl+Shift+A で表示)
-$rbRecreate = New-Object System.Windows.Forms.RadioButton
-$rbRecreate.Text = '[上級者] 既存フォルダの中身を削除して作り直す'
-$rbRecreate.Location = New-Object System.Drawing.Point(15, 76)
-$rbRecreate.AutoSize = $true
-$rbRecreate.ForeColor = [System.Drawing.Color]::Firebrick
-$rbRecreate.Visible = $false
-
-$gb.Controls.AddRange(@($rbAbort, $rbSkip, $rbRecreate))
-
-$chkDry = New-Object System.Windows.Forms.CheckBox
-$chkDry.Text = 'プレビューのみ(実際には作成しない)'
-$chkDry.Location = New-Object System.Drawing.Point(20, 177)
-$chkDry.AutoSize = $true
-
-$btnRun = New-Object System.Windows.Forms.Button
-$btnRun.Text = '実行'
-$btnRun.Location = New-Object System.Drawing.Point(440, 171)
-$btnRun.Size = New-Object System.Drawing.Size(105, 32)
-
-$txtLog = New-Object System.Windows.Forms.TextBox
-$txtLog.Location = New-Object System.Drawing.Point(15, 214)
-$txtLog.Size = New-Object System.Drawing.Size(530, 165)
-$txtLog.Multiline = $true
-$txtLog.ReadOnly = $true
-$txtLog.ScrollBars = 'Vertical'
-
-$form.Controls.AddRange(@(
-    $lblParent, $txtParent, $btnParent,
-    $gb, $chkDry, $btnRun, $txtLog
-))
-
+# Invoke-FolderCreate が使う出力先(GUI版ではログ欄、ここではコンソール)
 function Write-Log {
     param([string]$Message)
-    $txtLog.AppendText($Message + "`r`n")
+    Write-Host $Message
 }
 
-# --- イベント ---
-
-$btnParent.Add_Click({
-    $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
-    $dlg.Description = 'フォルダを作成する親フォルダを選択してください'
-    if ($dlg.ShowDialog() -eq 'OK') { $txtParent.Text = $dlg.SelectedPath }
-})
-
-# 隠しメニューの切り替え: Ctrl + Shift + A
-$form.Add_KeyDown({
-    param($sender, $e)
-    if ($e.Control -and $e.Shift -and $e.KeyCode -eq 'A') {
-        $rbRecreate.Visible = -not $rbRecreate.Visible
-        if (-not $rbRecreate.Visible -and $rbRecreate.Checked) { $rbAbort.Checked = $true }
-        $e.SuppressKeyPress = $true
-    }
-})
-
-$btnRun.Add_Click({
-    $txtLog.Clear()
-    $parent   = $txtParent.Text.Trim()
-    $listPath = $DEFAULT_LIST_PATH
-
-    if ([string]::IsNullOrWhiteSpace($parent) -or -not (Test-Path -LiteralPath $parent -PathType Container)) {
-        Write-Log '親フォルダが見つかりません。'
-        return
-    }
-    if (-not (Test-Path -LiteralPath $listPath -PathType Leaf)) {
-        Write-Log "フォルダ一覧ファイルが見つかりません: $listPath"
-        return
-    }
-    Write-Log "一覧ファイル: $listPath"
-
-    try {
-        $parsed = Read-FolderList -Path $listPath
-        if ($parsed.Errors.Count -gt 0) {
-            Write-Log '一覧ファイルに問題があります。修正してから再実行してください。'
-            foreach ($err in $parsed.Errors) { Write-Log "  $err" }
-            return
+# 起動時チェック。続行してよければ $true、終了すべきなら $false を返す。
+# (一覧ファイルがなければ空ファイルを作成する副作用あり)
+function Invoke-StartupCheck {
+    if (-not (Test-Path -LiteralPath $DEFAULT_LIST_PATH -PathType Leaf)) {
+        try {
+            New-Item -ItemType File -Path $DEFAULT_LIST_PATH | Out-Null
+            Write-Host 'フォルダ一覧を作成して再実行してください。'
+            Write-Host 'フォルダ一覧の空ファイルを作成しました。'
         }
-        if ($parsed.Folders.Count -eq 0) {
-            Write-Log '作成するフォルダが書かれていません。'
-            return
+        catch {
+            Write-Host 'フォルダ一覧の空ファイルを作成できませんでした。' -ForegroundColor Red
+            Write-Host $_.Exception.Message -ForegroundColor Red
         }
+        Write-Host $DEFAULT_LIST_PATH
+        return $false
+    }
 
-        $mode = 'Abort'
-        if ($rbSkip.Checked) { $mode = 'Skip' }
-        if ($rbRecreate.Visible -and $rbRecreate.Checked) { $mode = 'Recreate' }
+    # 3バイト以下(0バイト・BOMのみ・空白のみ)のときだけ中身を確認する簡易チェック
+    if ((Get-Item -LiteralPath $DEFAULT_LIST_PATH).Length -le 3) {
+        $listText = [System.IO.File]::ReadAllText($DEFAULT_LIST_PATH, [System.Text.Encoding]::UTF8)
+        if ([string]::IsNullOrWhiteSpace($listText.Trim([char]0xFEFF))) {
+            Write-Host 'フォルダ一覧に入力がありません。'
+            Write-Host $DEFAULT_LIST_PATH
+            return $false
+        }
+    }
+    return $true
+}
 
-        if ($mode -eq 'Recreate' -and -not $chkDry.Checked) {
-            $answer = [System.Windows.Forms.MessageBox]::Show(
-                "一覧にある既存フォルダの中身を完全に削除します(ごみ箱には入りません)。`n続行しますか?",
-                '確認', 'YesNo', 'Warning', 'Button2')
-            if ($answer -ne 'Yes') {
-                Write-Log 'キャンセルしました。'
-                return
+# 親フォルダを入力させる。未入力ならフォルダ選択ダイアログを開く。キャンセル時は $null。
+function Read-ParentFolder {
+    while ($true) {
+        $path = (Read-Host '親フォルダのパス(未入力でフォルダ選択ダイアログ)').Trim().Trim('"')
+
+        if ($path -eq '') {
+            $dlg   = New-Object System.Windows.Forms.FolderBrowserDialog
+            $dlg.Description = 'フォルダを作成する親フォルダを選択してください'
+            # コンソールの背面に隠れないよう、最前面の非表示フォームを親にする
+            $owner = New-Object System.Windows.Forms.Form -Property @{ TopMost = $true }
+            try {
+                if ($dlg.ShowDialog($owner) -ne 'OK') { return $null }
+                return $dlg.SelectedPath
+            }
+            finally {
+                $dlg.Dispose()
+                $owner.Dispose()
             }
         }
 
-        Invoke-FolderCreate -Parent $parent -Folders $parsed.Folders -Mode $mode -DryRun $chkDry.Checked
+        if (Test-Path -LiteralPath $path -PathType Container) { return $path }
+        Write-Host '見つかりません。もう一度入力してください。' -ForegroundColor Yellow
     }
-    catch {
-        Write-Log "エラー: $($_.Exception.Message)"
-    }
-})
+}
 
-[void]$form.ShowDialog()
+# 既存フォルダがある場合の挙動を番号で選ばせる。
+# 既存フォルダがある場合の挙動と、プレビューかどうかを番号で選ばせる。
+# プレビュー結果に応じた選択肢を出す。中止なら $null、実行なら挙動(Abort/Skip/Recreate)を返す。
+function Read-RunChoice {
+    param([bool]$HasExisting)
+
+    if ($HasExisting) { Write-Host '[2] ないものだけ実行する / [9] 中止する' }
+    else              { Write-Host '[1] 実行する / [9] 中止する' }
+
+    while ($true) {
+        $answer = (Read-Host '番号を入力').Trim()
+        if ($answer -eq '9')                              { return $null }
+        if (-not $HasExisting -and $answer -eq '1')       { return 'Abort' }
+        if ($HasExisting -and $answer -eq '2')            { return 'Skip' }
+        if ($HasExisting -and $answer -eq 'Recreate')     { return 'Recreate' }  # 隠しメニュー(表示しない)
+        Write-Host '表示されている番号を入力してください。' -ForegroundColor Yellow
+    }
+}
+
+
+# ---------------------------------------------------------------
+# メイン
+# ---------------------------------------------------------------
+try {
+    if (-not (Invoke-StartupCheck)) {
+        [void](Read-Host 'Enterキーで終了します')
+        exit 1
+    }
+
+     $parsed = Read-FolderList -Path $DEFAULT_LIST_PATH
+    if ($parsed.Entries.Count -eq 0) {
+        Write-Host '作成するフォルダが書かれていません。' -ForegroundColor Yellow
+        [void](Read-Host 'Enterキーで終了します')
+        exit 1
+    }
+    Write-Host "一覧ファイル: $DEFAULT_LIST_PATH"
+    Write-Host "作成対象: $($parsed.Entries.Count) 件"
+    Write-Host ''
+
+    $parent = Read-ParentFolder
+    if (-not $parent) {
+        Write-Host 'キャンセルしました。'
+        [void](Read-Host 'Enterキーで終了します')
+        exit 0
+    }
+
+    # プレビュー
+    Write-Host ''
+    $report = Show-FolderPreview -Parent $parent -Entries $parsed.Entries
+    Write-Host ''
+
+    if ($report.Invalid -gt 0) {
+        Write-Host '続行できません。フォルダ名を見直してください。' -ForegroundColor Red
+        [void](Read-Host 'Enterキーで終了します')
+        exit 1
+    }
+
+    $mode = Read-RunChoice -HasExisting ($report.Exists -gt 0)
+    if (-not $mode) {
+        Write-Host '中止しました。'
+        [void](Read-Host 'Enterキーで終了します')
+        exit 0
+    }
+
+    if ($mode -eq 'Recreate') {
+        Write-Host '一覧にある既存フォルダの中身を完全に削除します(ごみ箱には入りません)。' -ForegroundColor Red
+        if ((Read-Host '続行するには yes と入力') -ne 'yes') {
+            Write-Host 'キャンセルしました。'
+            [void](Read-Host 'Enterキーで終了します')
+            exit 0
+        }
+    }
+
+    Write-Host ''
+    Invoke-FolderCreate -Parent $parent -Folders $parsed.Folders -Mode $mode -DryRun $false
+    [void](Read-Host 'Enterキーで終了します')
+    exit 0
+}
+catch {
+    Write-Host "エラー: $($_.Exception.Message)" -ForegroundColor Red
+    [void](Read-Host 'Enterキーで終了します')
+    exit 1
+}
